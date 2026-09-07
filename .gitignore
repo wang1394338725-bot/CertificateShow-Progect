@@ -1,0 +1,26 @@
+# ---- 敏感配置：数据库密码 / JWT secret 在里面，只推 application-example.yml 模板 ----
+**/application.yml
+
+# ---- 构建产物 ----
+target/
+node_modules/
+dist/
+
+# ---- 运行时数据：上传的奖状图片 ----
+uploads/
+
+# ---- IDE ----
+.idea/
+.vscode/
+*.iml
+
+# ---- IDE 插件本地索引 ----
+.codeartsdoer/
+.merkle-snapshot.json
+
+# ---- 系统文件 ----
+.DS_Store
+Thumbs.db
+
+# ---- 旧仓库备份（原 Gitee 后端仓库历史） ----
+.git-gitee-backup/

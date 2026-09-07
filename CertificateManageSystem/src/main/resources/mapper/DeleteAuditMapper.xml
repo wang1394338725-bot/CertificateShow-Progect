@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.certificatemanagesystem.mapper.DeleteAuditMapper">
+
+    <select id="selectAuditMessages" resultType="org.example.certificatemanagesystem.common.vo.AuditMsgVO">
+        SELECT
+            a.id,
+            a.certificate_id      AS certificateId,
+            a.certificate_title   AS certificateTitle,
+            a.requester_id        AS requesterId,
+            a.requester_name      AS requesterName,
+            a.reason,
+            a.status,
+            COALESCE(p.real_name, p.username) AS approverName,
+            a.reject_reason       AS rejectReason,
+            a.approve_time        AS approveTime,
+            a.create_time         AS createTime
+        FROM delete_audit a
+        LEFT JOIN admin p ON p.id = a.approver_id
+        ORDER BY a.create_time DESC
+    </select>
+
+</mapper>

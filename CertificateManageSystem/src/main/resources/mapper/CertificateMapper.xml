@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.certificatemanagesystem.mapper.CertificateMapper">
+
+    <!-- 主页-置顶推荐：公开奖状中已置顶的，权重大的在前 -->
+    <select id="selectPinnedForHome" resultType="org.example.certificatemanagesystem.entity.Certificate">
+        SELECT *
+        FROM certificate
+        WHERE status = 0 AND is_pinned = 1
+        ORDER BY sort_order DESC, create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 主页-按等级排序：FIELD 自定义等级次序（国家级>省级>市级>校级>其他），排除已置顶避免与置顶块重复展示 -->
+    <select id="selectTopByLevel" resultType="org.example.certificatemanagesystem.entity.Certificate">
+        SELECT *
+        FROM certificate
+        WHERE status = 0 AND is_pinned = 0
+        ORDER BY FIELD(award_level, '国家级', '省级', '市级', '校级', '其他'), create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 主页-按获奖时间排序：最新的在前，排除已置顶 -->
+    <select id="selectTopByTime" resultType="org.example.certificatemanagesystem.entity.Certificate">
+        SELECT *
+        FROM certificate
+        WHERE status = 0 AND is_pinned = 0
+        ORDER BY award_date DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

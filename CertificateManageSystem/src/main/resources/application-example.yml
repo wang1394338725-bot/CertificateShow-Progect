@@ -1,0 +1,32 @@
+spring:
+  servlet:
+    multipart:
+      # 单文件与单请求上传大小限制（超过会返回 400："图片大小超过限制，最大 20MB"）
+      max-file-size: 20MB
+      max-request-size: 20MB
+  datasource:
+    url: "jdbc:mysql://localhost:3306/Your-dbname?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false"
+    username: Your-username
+    password: Your-password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  # 实体类所在的包（让 MyBatis-Plus 能识别 @TableName 等注解）
+  type-aliases-package: org.example.certificatemanagesystem.entity
+  configuration:
+    # 开启驼峰命名映射（数据库下划线 → Java 驼峰，例如 award_level → awardLevel）
+    # 这是 MyBatis 的核心特性，不懂会导致查询结果无法映射到实体类
+    map-underscore-to-camel-case: true
+    # 开发时打印 SQL 到控制台（方便调试）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+jwt:
+  secret: Your-secret
+  expiration: 3600000
+  # 会话绝对上限（天）：自首次登录起超过该天数后拒绝续期，强制重新登录（防止无限续期）
+  max-session-days: 3
+server:
+  port: 9090
+# 上传文件存储根目录（部署时改为服务器路径或 Docker 挂载卷，代码通过 @Value 读取）
+upload:
+  base-path: Your-upload-path
+
