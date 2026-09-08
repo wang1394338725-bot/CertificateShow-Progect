@@ -27,6 +27,12 @@
                         登 录
                     </el-button>
                 </el-form-item>
+
+                <el-form-item>
+                    <el-button link type="primary" @click="router.push('/')" class="back-home-btn">
+                        ← 返回主页
+                    </el-button>
+                </el-form-item>
             </el-form>
         </el-card>
     </div>
@@ -133,5 +139,11 @@ const handleLoginSubmit = async () => {
     color: #909399;
     display: block;
     margin-top: 4px;
+}
+
+.back-home-btn {
+    /* 返回主页链接在表单内居中 */
+    width: 100%;
+    text-align: center;
 }
 </style>

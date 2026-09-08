@@ -28,5 +28,8 @@ public interface CertificateService extends IService<Certificate> {
     /** 更换/补传奖状图片：保存新图、更新 imageUrl、删除旧图文件 */
     void updateImage(Long id, MultipartFile file);
 
+    /** 导出全部正常状态奖状为 Excel（表头与导入别名一致，可导入回环），直接写下载流 */
+    void exportExcel(String baseUrl, jakarta.servlet.http.HttpServletResponse response);
+
     void updatePinStatus(PinDTO pinDTO);
 }

@@ -12,6 +12,14 @@ const router = createRouter({
       component: () => import("../page/HomeView.vue"),
     },
     {
+      path: "/list",
+      name: "PublicList",
+      component: () => import("../page/PublicBrowseView.vue"),
+      meta: {
+        title: "奖状一览",
+      },
+    },
+    {
       path: "/login",
       name: "Login",
       component: () => import("../page/Login.vue"),
@@ -35,6 +43,7 @@ const router = createRouter({
           component: () => import("../page/BrowseView.vue"),
           meta: {
             title: "奖状浏览",
+            requiresAuth: true,
             keepAlive: true,
           },
         },

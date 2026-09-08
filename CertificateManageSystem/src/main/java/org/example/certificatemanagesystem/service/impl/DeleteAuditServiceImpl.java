@@ -85,6 +85,9 @@ public class DeleteAuditServiceImpl extends ServiceImpl<DeleteAuditMapper, Delet
 
     @Override
     public PageResult<AuditMsgVO> getAuditMessages(int current, int size) {
+        // 防刷钳制：与奖状分页同一策略（size≤50，current≤1000）
+        current = Math.min(Math.max(current, 1), 1000);
+        size = Math.min(Math.max(size, 1), 50);
         Page<AuditMsgVO> page = new Page<>(current, size);
         // 自定义 SQL 传入 Page 参数，由分页插件自动追加 LIMIT 与 COUNT
         Page<AuditMsgVO> result = baseMapper.selectAuditMessages(page);

@@ -1,6 +1,7 @@
 package org.example.certificatemanagesystem.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.certificatemanagesystem.common.dto.CertificateQueryDTO;
 import org.example.certificatemanagesystem.common.dto.CertificateUpdateDTO;
@@ -11,8 +12,8 @@ import org.example.certificatemanagesystem.common.vo.CertificateVO;
 import org.example.certificatemanagesystem.common.vo.HomeVO;
 import org.example.certificatemanagesystem.common.vo.ImportResultVO;
 import org.example.certificatemanagesystem.common.vo.ResultVO;
+import org.example.certificatemanagesystem.config.AuthInterceptor;
 import org.example.certificatemanagesystem.service.CertificateService;
-import org.example.certificatemanagesystem.common.utils.JwtUtil;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,19 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class CertificateController {
     private final CertificateService certificateService;
-    private final JwtUtil jwtUtil;
-
-    private Long parseUserId(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
-        }
-        try {
-            return Long.parseLong(jwtUtil.getUserIdFromToken(authHeader.substring(7)));
-        } catch (Exception e) {
-            return null;
-        }
-    }
 
     @PostMapping("/upload")
     public ResultVO<String> upload(@ModelAttribute UploadDTO uploadDTO,
@@ -42,14 +30,9 @@ public class CertificateController {
         return ResultVO.success();
     }
 
-    /** Excel 批量导入（需登录）：逐行校验，单行失败不影响其余行 */
+    /** Excel 批量导入（需登录，拦截器保证）：逐行校验，单行失败不影响其余行 */
     @PostMapping("/import")
-    public ResultVO<ImportResultVO> importExcel(@RequestParam("file") MultipartFile file,
-            HttpServletRequest request) {
-        Long userId = parseUserId(request);
-        if (userId == null) {
-            return ResultVO.error(401, "未登录或 token 无效");
-        }
+    public ResultVO<ImportResultVO> importExcel(@RequestParam("file") MultipartFile file) {
         return ResultVO.success(certificateService.importExcel(file));
     }
 
@@ -67,9 +50,21 @@ public class CertificateController {
     }
 
     @PostMapping("/view")
-    public ResultVO<PageResult<CertificateVO>> view(@RequestBody CertificateQueryDTO certificateQueryDTO) {
-        PageResult<CertificateVO> pageResult = certificateService.queryCertificatePage(certificateQueryDTO);
-        return ResultVO.success(pageResult);
+    public ResultVO<PageResult<CertificateVO>> view(@RequestBody CertificateQueryDTO certificateQueryDTO,
+            HttpServletRequest request) {
+        // 高危漏洞修复：/view 是公开接口，未登录访客强制只看正常状态奖状（防止 curl 拖库）；
+        // 已登录管理员可查全部状态（待审核删除/已隐藏）
+        if (request.getAttribute(AuthInterceptor.USER_ID_ATTR) == null) {
+            certificateQueryDTO.setStatus("0");
+        }
+        return ResultVO.success(certificateService.queryCertificatePage(certificateQueryDTO));
+    }
+
+    /** 导出全部正常奖状为 Excel（需登录，拦截器保证）：基本信息 + 图片地址列，表头与导入兼容 */
+    @GetMapping("/export")
+    public void exportExcel(HttpServletRequest request, HttpServletResponse response) {
+        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+        certificateService.exportExcel(baseUrl, response);
     }
 
     @PutMapping("/update")
@@ -78,14 +73,10 @@ public class CertificateController {
         return ResultVO.success("更新成功");
     }
 
-    /** 更换/补传奖状图片（需登录）：id + file，Excel 导入的无图奖状也走此接口补图 */
+    /** 更换/补传奖状图片（需登录，拦截器保证）：id + file，Excel 导入的无图奖状也走此接口补图 */
     @PutMapping("/update-image")
     public ResultVO<String> updateImage(@RequestParam("id") Long id,
-            @RequestParam("file") MultipartFile file, HttpServletRequest request) {
-        Long userId = parseUserId(request);
-        if (userId == null) {
-            return ResultVO.error(401, "未登录或 token 无效");
-        }
+            @RequestParam("file") MultipartFile file) {
         certificateService.updateImage(id, file);
         return ResultVO.success("图片已更新");
     }

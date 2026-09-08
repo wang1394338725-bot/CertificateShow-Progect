@@ -51,7 +51,9 @@
 
                 <!-- 等级前三 -->
                 <section class="section">
-                    <h2 class="section-title">等级前三</h2>
+                    <h2 class="section-title clickable" @click="$router.push('/list?sortBy=level')">
+                        等级前三<span class="view-all">查看全部 →</span>
+                    </h2>
                     <div class="card-row three">
                         <template v-for="i in 3" :key="'l' + i">
                             <div v-if="home.byLevel[i - 1]" class="cert-card" @click="openDetail(home.byLevel[i - 1])">
@@ -79,7 +81,9 @@
 
                 <!-- 最新荣誉（按时间前三） -->
                 <section class="section">
-                    <h2 class="section-title">最新荣誉</h2>
+                    <h2 class="section-title clickable" @click="$router.push('/list?sortBy=time')">
+                        最新荣誉<span class="view-all">查看全部 →</span>
+                    </h2>
                     <div class="card-row three">
                         <template v-for="i in 3" :key="'t' + i">
                             <div v-if="home.byTime[i - 1]" class="cert-card" @click="openDetail(home.byTime[i - 1])">
@@ -351,6 +355,29 @@ onMounted(() => {
     margin: 0 0 14px;
     padding-left: 10px;
     border-left: 4px solid #409eff;
+}
+
+/* 可点击区块标题：点击跳转到对应排序的完整列表 */
+.section-title.clickable {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.section-title.clickable:hover {
+    color: #409eff;
+}
+
+.view-all {
+    float: right;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--hp-sub);
+    line-height: 26px;
+    transition: color 0.2s;
+}
+
+.section-title.clickable:hover .view-all {
+    color: #409eff;
 }
 
 .result-count {

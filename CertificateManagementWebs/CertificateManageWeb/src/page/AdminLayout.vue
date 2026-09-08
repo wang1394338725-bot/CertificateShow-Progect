@@ -36,6 +36,9 @@
             <el-header class="admin-header">
                 <div class="header-left">管理员界面</div>
                 <div class="header-right">
+                    <el-button :icon="HomeFilled" text bg class="home-btn" @click="router.push('/')">
+                        返回主页
+                    </el-button>
                     <el-dropdown @command="handleCommand">
                         <span class="admin-name">
                             <span class="name-text">{{ adminName }}</span>
@@ -65,13 +68,14 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { loadUserInfo } from '../utils/storage'
-import { Upload, Document, Message, ArrowDown, User } from '@element-plus/icons-vue'
+import { Upload, Document, Message, ArrowDown, User, HomeFilled } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
 const route = useRoute()
+const router = useRouter()
 const userInfo = loadUserInfo()
 
 const activeMenu = computed(() => route.path)
@@ -208,6 +212,7 @@ const isSuperAdmin = computed(() => userInfo?.role === "SUPER_ADMIN");
 .header-right {
     display: flex;
     align-items: center;
+    gap: 12px;
 }
 
 .admin-name {

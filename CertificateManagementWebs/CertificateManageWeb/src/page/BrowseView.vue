@@ -24,9 +24,16 @@
                         <el-option label="已隐藏" value="2" />
                     </el-select>
                 </el-form-item>
+                <el-form-item label="排序">
+                    <el-select v-model="searchForm.sortBy" placeholder="默认（置顶优先）" @change="handleSearch">
+                        <el-option label="按等级（国家→省→市→校）" value="level" />
+                        <el-option label="按获奖时间（新→旧）" value="time" />
+                    </el-select>
+                </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="handleSearch">检索</el-button>
                     <el-button @click="resetSearch">重置</el-button>
+                    <el-button type="success" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
                 </el-form-item>
             </el-form>
         </el-card>
@@ -143,11 +150,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import axios from 'axios'
 import type { ApiResponse, Certificate, PageResult } from '../api/api'
 import { loadUserInfo } from '../utils/storage'
+
+const route = useRoute()
 
 // 当前用户角色：决定删除行为（超管直接删除，普通管理员提交申请）
 const isSuperAdmin = loadUserInfo()?.role === 'SUPER_ADMIN'
@@ -160,7 +170,9 @@ const page = reactive({ current: 1, size: 10, total: 0 })
 const searchForm = reactive({
     keyword: '',
     level: '',
-    status: ''
+    status: '',
+    // 排序方式：level/time；主页「等级前三」「最新荣誉」标题跳转时经 URL query 带入
+    sortBy: (route.query.sortBy as string) || ''
 })
 
 // 查看
@@ -209,7 +221,8 @@ const fetchData = async () => {
             size: page.size,
             keyword: searchForm.keyword || undefined,
             level: searchForm.level || undefined,
-            status: searchForm.status || undefined
+            status: searchForm.status || undefined,
+            sortBy: searchForm.sortBy || undefined
         };
 
         const res = await axios.post<ApiResponse<PageResult<Certificate>>>('/api/certificate/view', params);
@@ -236,8 +249,40 @@ const resetSearch = () => {
     searchForm.keyword = ''
     searchForm.level = ''
     searchForm.status = ''
+    searchForm.sortBy = ''
     handleSearch()
 }
+
+// ---------- 导出 Excel ----------
+// responseType: 'blob' 时响应拦截器直接放行（Blob 无 code 字段），错误分支由全局拦截器兜底
+const exporting = ref(false)
+
+const exportExcel = async () => {
+    exporting.value = true
+    try {
+        const res = await axios.get('/api/certificate/export', { responseType: 'blob' })
+        const url = URL.createObjectURL(res.data as Blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `奖状导出_${new Date().toISOString().slice(0, 10)}.xlsx`
+        a.click()
+        URL.revokeObjectURL(url)
+        ElMessage.success('导出成功')
+    } catch {
+        // 错误提示由全局拦截器统一处理
+    } finally {
+        exporting.value = false
+    }
+}
+
+// 页面被 keepAlive 缓存后再次从主页跳入：URL query 变化时同步排序并刷新
+watch(() => route.query.sortBy, (v) => {
+    const next = (v as string) || ''
+    if (next === searchForm.sortBy) return
+    searchForm.sortBy = next
+    page.current = 1
+    fetchData()
+})
 
 // 查看
 const viewDetail = (row: any) => {

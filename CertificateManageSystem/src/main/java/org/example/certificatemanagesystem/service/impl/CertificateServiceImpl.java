@@ -18,12 +18,17 @@ import org.example.certificatemanagesystem.entity.Certificate;
 import org.example.certificatemanagesystem.mapper.CertificateMapper;
 import org.example.certificatemanagesystem.service.CertificateService;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,11 +37,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -127,9 +135,76 @@ public class CertificateServiceImpl extends ServiceImpl<CertificateMapper, Certi
     }
 
     @Override
+    public void exportExcel(String baseUrl, jakarta.servlet.http.HttpServletResponse response) {
+        // 导出全部正常状态奖状，按获奖日期倒序；表头与导入别名一致，导出的表格可直接再导入
+        List<Certificate> list = certificateMapper.selectList(
+                new LambdaQueryWrapper<Certificate>()
+                        .eq(Certificate::getStatus, 0)
+                        .orderByDesc(Certificate::getAwardDate)
+                        .orderByDesc(Certificate::getId));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("奖状列表");
+
+            // 表头样式：加粗 + 灰底
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = { "奖状名称", "获奖成员", "赛事名称", "奖状等级", "所属项目", "获奖日期", "图片地址" };
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+                sheet.setColumnWidth(i, 22 * 256);
+            }
+            sheet.setColumnWidth(6, 46 * 256); // 图片地址列较宽
+
+            int r = 1;
+            for (Certificate c : list) {
+                Row row = sheet.createRow(r++);
+                row.createCell(0).setCellValue(defaultIfBlank(c.getTitle()));
+                row.createCell(1).setCellValue(defaultIfBlank(c.getRecipient()));
+                row.createCell(2).setCellValue(defaultIfBlank(c.getEventName()));
+                row.createCell(3).setCellValue(defaultIfBlank(c.getAwardLevel()));
+                row.createCell(4).setCellValue(defaultIfBlank(c.getProjectName()));
+                row.createCell(5).setCellValue(c.getAwardDate() != null ? c.getAwardDate().toString() : "");
+                // 相对路径拼成完整 URL，Excel 内可直接点击查看图片
+                row.createCell(6).setCellValue(StringUtils.hasText(c.getImageUrl()) ? baseUrl + c.getImageUrl() : "");
+            }
+
+            String fileName = URLEncoder.encode(
+                    "奖状导出_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx",
+                    StandardCharsets.UTF_8);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
+
+            workbook.write(response.getOutputStream());
+            response.getOutputStream().flush();
+        } catch (IOException e) {
+            throw new BusinessException("导出失败：" + e.getMessage());
+        }
+    }
+
+    private String defaultIfBlank(String s) {
+        return StringUtils.hasText(s) ? s : "";
+    }
+
+    /** 分页参数防刷钳制：size 上限 50（防 size=10000 一次拖全表），current 上限 1000（防超深 offset 拖垮 DB） */
+    private Page<Certificate> clampPage(Integer current, Integer size) {
+        int c = current == null ? 1 : Math.min(Math.max(current, 1), 1000);
+        int s = size == null ? 12 : Math.min(Math.max(size, 1), 50);
+        return new Page<>(c, s);
+    }
+
+    @Override
     public PageResult<CertificateVO> queryCertificatePage(CertificateQueryDTO certificateQueryDTO) {
-        // 1. 构建 MyBatis-Plus 分页对象
-        Page<Certificate> page = new Page<>(certificateQueryDTO.getCurrent(), certificateQueryDTO.getSize());
+        // 1. 构建 MyBatis-Plus 分页对象（参数经防刷钳制）
+        Page<Certificate> page = clampPage(certificateQueryDTO.getCurrent(), certificateQueryDTO.getSize());
 
         // 2. 构建查询条件（Wrapper）
         LambdaQueryWrapper<Certificate> wrapper = new LambdaQueryWrapper<>();
@@ -151,10 +226,18 @@ public class CertificateServiceImpl extends ServiceImpl<CertificateMapper, Certi
             wrapper.eq(Certificate::getStatus, certificateQueryDTO.getStatus());
         }
 
-        // 3. 排序规则：置顶的排最前，置顶中按 sort_order 权重倒序（越晚置顶越靠前），再按创建时间倒序
-        wrapper.orderByDesc(Certificate::getIsPinned)
-                .orderByDesc(Certificate::getSortOrder)
-                .orderByDesc(Certificate::getCreateTime);
+        // 3. 排序规则：sortBy 指定时按指定方式，否则置顶优先（置顶 → sort_order 权重倒序 → 创建时间倒序）
+        if ("level".equals(certificateQueryDTO.getSortBy())) {
+            // 等级按 国家>省>市>校>其他 的业务顺序（FIELD 返回序号），同级内按获奖日期倒序
+            wrapper.last("ORDER BY FIELD(award_level, '国家级', '省级', '市级', '校级', '其他'), award_date DESC, id DESC");
+        } else if ("time".equals(certificateQueryDTO.getSortBy())) {
+            wrapper.orderByDesc(Certificate::getAwardDate)
+                    .orderByDesc(Certificate::getId);
+        } else {
+            wrapper.orderByDesc(Certificate::getIsPinned)
+                    .orderByDesc(Certificate::getSortOrder)
+                    .orderByDesc(Certificate::getCreateTime);
+        }
 
         // 4. 执行分页查询
         Page<Certificate> certificatePage = certificateMapper.selectPage(page, wrapper);
