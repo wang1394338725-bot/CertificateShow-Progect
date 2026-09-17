@@ -76,16 +76,3 @@ CREATE TABLE `operation_log` (
                                  KEY `idx_target_id` (`target_id`),
                                  KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
-
--- 5. 门禁答题封禁表（答错5次封5分钟，24h内再错时长翻倍至上限24h，累计封6次永久拉黑）
-CREATE TABLE `gate_ban` (
-                            `ip` VARCHAR(64) NOT NULL COMMENT '客户端IP',
-                            `fail_count` INT NOT NULL DEFAULT 0 COMMENT '当前连续答错次数（答对或超24h重置）',
-                            `ban_until` DATETIME DEFAULT NULL COMMENT '封禁截止时间，NULL-未封禁',
-                            `last_fail_at` DATETIME DEFAULT NULL COMMENT '最近一次答错时间（超24h重置翻倍阶梯）',
-                            `ban_count` INT NOT NULL DEFAULT 0 COMMENT '累计被封禁次数，达6次永久拉黑，永不重置',
-                            `last_ban_minutes` BIGINT NOT NULL DEFAULT 0 COMMENT '上一次封禁时长（分钟），用于翻倍',
-                            `permanent` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否永久拉黑：0-否，1-是',
-                            `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                            PRIMARY KEY (`ip`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='门禁答题封禁表';

@@ -59,37 +59,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    private static final long GATE_EXPIRATION_MS = 7 * 24 * 3600 * 1000L; // 门禁 token 有效期 7 天
-
-    /**
-     * 门禁 token：答对门禁题后签发。subject 固定 "GATE" 且带 gate 标记，
-     * 与管理员 token 天然隔离（getUserIdFromToken 解析 subject 为数字必然失败，无法冒充管理员）。
-     */
-    public String generateGateToken() {
-        Date now = new Date();
-        return Jwts.builder()
-                .subject("GATE")
-                .claim("gate", 1)
-                .issuedAt(now)
-                .expiration(new Date(now.getTime() + GATE_EXPIRATION_MS))
-                .signWith(getSecretKey(), Jwts.SIG.HS256)
-                .compact();
-    }
-
-    /** 校验门禁 token：签名有效、未过期且带 gate 标记 */
-    public boolean validateGateToken(String token) {
-        try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(getSecretKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-            return Integer.valueOf(1).equals(claims.get("gate", Integer.class));
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     public String getUserIdFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSecretKey())
