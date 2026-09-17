@@ -71,4 +71,32 @@ public class DeleteAuditController {
         deleteAuditService.audit(auditDTO, userId);
         return ResultVO.success(Boolean.TRUE.equals(auditDTO.getApproved()) ? "已通过并删除奖状" : "已驳回该申请");
     }
+
+    /**
+     * 删除单条已处理消息（仅 SUPER_ADMIN）。待审核消息不允许删，service 层校验。
+     */
+    @DeleteMapping("/audit/{id}")
+    public ResultVO<String> removeAudit(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        Admin admin = adminMapper.selectById(userId);
+        if (admin == null || !"SUPER_ADMIN".equals(admin.getRole())) {
+            return ResultVO.error(403, "仅超级管理员可删除消息");
+        }
+        return deleteAuditService.removeAuditById(id) > 0
+                ? ResultVO.success("已删除该消息")
+                : ResultVO.error(400, "消息不存在或仍在待审核中，无法删除");
+    }
+
+    /**
+     * 一键清除全部已处理消息（status 1/2/3，仅 SUPER_ADMIN），返回清除条数。
+     */
+    @DeleteMapping("/audit-processed")
+    public ResultVO<Long> clearProcessed(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        Admin admin = adminMapper.selectById(userId);
+        if (admin == null || !"SUPER_ADMIN".equals(admin.getRole())) {
+            return ResultVO.error(403, "仅超级管理员可清除消息");
+        }
+        return ResultVO.success(deleteAuditService.removeProcessed());
+    }
 }

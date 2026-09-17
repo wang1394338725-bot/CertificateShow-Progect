@@ -31,11 +31,15 @@
                     <el-date-picker v-model="form.awardDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" />
                 </el-form-item>
                 <el-form-item label="奖状图片" prop="image">
-                    <input type="file" accept="image/*" @change="handleImageChange" ref="fileInput" />
+                    <input type="file" accept="image/*" @change="handleImageChange" ref="fileInput"
+                        class="hidden-file-input" />
+                    <div>
+                        <el-button type="primary" plain :icon="Picture" @click="fileInput?.click()">选择图片</el-button>
+                        <div class="tip">点击后在手机上可拍照或从相册选择；支持 JPG/PNG，单张不超过 5MB，图片保存在服务器本地</div>
+                    </div>
                     <div v-if="imagePreview" class="image-preview">
                         <img :src="imagePreview" alt="奖状预览" style="max-width: 200px; max-height: 200px;" />
                     </div>
-                    <div class="tip">图片将上传至服务器本地存储，支持 JPG/PNG 格式，单张不超过 5MB</div>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="submitForm" :loading="submitting">提交</el-button>
@@ -74,6 +78,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { Picture } from '@element-plus/icons-vue'
 import axios from 'axios'
 import type { ApiResponse } from '../api/api'
 
@@ -279,5 +284,21 @@ const submitImport = async () => {
 .failure-item {
     padding: 4px 0;
     border-bottom: 1px dashed #ebeef5;
+}
+
+.hidden-file-input {
+    display: none; /* 隐藏原生 file input，由"选择图片"按钮触发；手机浏览器 accept=image/* 自动弹出拍照/相册 */
+}
+
+/* ===== 移动端适配（≤768px）===== */
+@media (max-width: 768px) {
+    /* 表单 label 从 120px 收窄，给输入控件让出宽度 */
+    .upload-form :deep(.el-form-item__label) {
+        width: 96px !important;
+    }
+
+    .import-actions {
+        flex-wrap: wrap;
+    }
 }
 </style>

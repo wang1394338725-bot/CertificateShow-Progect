@@ -96,6 +96,11 @@ const handleLoginSubmit = async () => {
 
         saveAuthData(token, userInfo);
 
+        // 首次登录/被清理过时建立"消息已读基线"=登录时刻：此前的消息不再计红点（退出时该时间戳会被保留）
+        if (!localStorage.getItem('auditLastReadTime')) {
+            localStorage.setItem('auditLastReadTime', String(Date.now()))
+        }
+
         ElMessage.success('登录成功');
 
         router.replace(redirectPath);
@@ -117,9 +122,10 @@ const handleLoginSubmit = async () => {
     margin: 0;
 }
 
-/* 卡片样式 */
+/* 卡片样式（max-width 钳制保证手机端不溢出） */
 .login-card {
     width: 400px;
+    max-width: 92vw;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }

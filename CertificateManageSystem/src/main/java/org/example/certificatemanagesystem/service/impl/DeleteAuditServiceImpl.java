@@ -110,6 +110,27 @@ public class DeleteAuditServiceImpl extends ServiceImpl<DeleteAuditMapper, Delet
     }
 
     @Override
+    public long removeAuditById(Long id) {
+        DeleteAudit audit = this.getById(id);
+        // 待审核（status=0）是待办事项，不允许删，避免普通管理员提交的申请被悄悄清掉
+        if (audit == null || audit.getStatus() == 0) {
+            return 0;
+        }
+        return this.removeById(id) ? 1 : 0;
+    }
+
+    @Override
+    public long removeProcessed() {
+        LambdaQueryWrapper<DeleteAudit> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(DeleteAudit::getStatus, 1, 2, 3); // 1-通过 2-驳回 3-直接删除
+        long count = this.count(wrapper);
+        if (count > 0) {
+            this.remove(wrapper);
+        }
+        return count;
+    }
+
+    @Override
     public void audit(AuditDTO auditDTO, Long approverId) {
         boolean approved = Boolean.TRUE.equals(auditDTO.getApproved());
         if (!approved && !StringUtils.hasText(auditDTO.getRejectReason())) {

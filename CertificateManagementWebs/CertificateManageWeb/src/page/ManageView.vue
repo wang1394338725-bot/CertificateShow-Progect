@@ -19,7 +19,7 @@
         <!-- 列表 -->
         <el-card class="list-card">
             <el-table :data="tableData" style="width: 100%" v-loading="loading">
-                <el-table-column prop="id" label="ID" width="80" />
+                <el-table-column prop="id" label="ID" width="80" class-name="hide-sm" />
                 <el-table-column prop="username" label="用户名" />
                 <el-table-column prop="realName" label="真实姓名" />
                 <el-table-column prop="role" label="角色" width="120">
@@ -29,20 +29,29 @@
                         <el-tag v-else type="info">未知</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="创建时间" width="180">
+                <el-table-column label="创建时间" width="180" class-name="hide-sm">
                     <template #default="{ row }">
                         {{ formatTime(row.createTime) }}
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="260" fixed="right">
+                <el-table-column label="操作" :width="isMobile ? 140 : 260" fixed="right">
                     <template #default="{ row }">
                         <!-- 超级管理员账号不可被管理 -->
                         <span v-if="row.role === 'SUPER_ADMIN'" class="sys-account">系统账号</span>
-                        <template v-else>
-                            <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
-                            <el-button size="small" type="warning" @click="openResetDialog(row)">重置密码</el-button>
-                            <el-button size="small" type="danger" plain @click="deleteAdmin(row)">删除</el-button>
-                        </template>
+                        <div v-else class="op-cell">
+                            <el-button size="small" type="primary" :icon="isMobile ? Edit : undefined"
+                                @click="openEditDialog(row)">
+                                {{ isMobile ? '' : '编辑' }}
+                            </el-button>
+                            <el-button size="small" type="warning" :icon="isMobile ? Key : undefined"
+                                @click="openResetDialog(row)">
+                                {{ isMobile ? '' : '重置密码' }}
+                            </el-button>
+                            <el-button size="small" type="danger" plain :icon="isMobile ? Delete : undefined"
+                                @click="deleteAdmin(row)">
+                                {{ isMobile ? '' : '删除' }}
+                            </el-button>
+                        </div>
                     </template>
                 </el-table-column>
             </el-table>
@@ -104,6 +113,8 @@
 import { reactive, ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Edit, Key, Delete } from '@element-plus/icons-vue'
+import { useIsMobile } from '../utils/responsive'
 
 interface AdminRow {
     id: number
@@ -114,6 +125,8 @@ interface AdminRow {
 }
 
 // ---------- 列表与搜索 ----------
+const { isMobile } = useIsMobile()
+
 const tableData = ref<AdminRow[]>([])
 const loading = ref(false)
 const page = reactive({ current: 1, size: 10, total: 0 })
@@ -310,5 +323,44 @@ onMounted(() => {
 .sys-account {
     color: #909399;
     font-size: 12px;
+}
+
+/* 操作列按钮容器：flex 排布换行对齐 */
+.op-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.op-cell .el-button+.el-button {
+    margin-left: 0;
+}
+
+/* ===== 移动端适配（≤768px）===== */
+@media (max-width: 768px) {
+    /* 工具栏上下堆叠，搜索框全宽 */
+    .toolbar-card :deep(.el-col) {
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    .toolbar-card :deep(.el-col-8) {
+        text-align: left !important;
+    }
+
+    .toolbar-card :deep(.el-col-8 .el-button) {
+        margin-top: 8px;
+    }
+
+    .toolbar-card :deep(.el-input) {
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+
+    /* 手机隐藏次要列：只留 用户名/真实姓名/角色/操作 */
+    .list-card :deep(th.hide-sm),
+    .list-card :deep(td.hide-sm) {
+        display: none;
+    }
 }
 </style>

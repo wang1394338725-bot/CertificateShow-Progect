@@ -1,5 +1,5 @@
--- 使用已有数据库
-USE your_db;
+-- 说明：compose 已通过 MYSQL_DATABASE 指定 certificate_management 库，
+-- 容器初始化脚本会自动连接该库执行本文件，无需（也不能）写 USE 语句，否则首次启动报错
 
 -- 1. 奖状主表
 CREATE TABLE `certificate` (

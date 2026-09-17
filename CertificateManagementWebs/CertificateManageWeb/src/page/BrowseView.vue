@@ -41,12 +41,12 @@
         <!-- 列表 -->
         <el-card class="list-card">
             <el-table :data="tableData" style="width: 100%" v-loading="loading">
-                <el-table-column prop="id" label="ID" width="80" />
+                <el-table-column prop="id" label="ID" width="80" class-name="hide-sm" />
                 <el-table-column prop="title" label="奖状名称" />
-                <el-table-column prop="recipient" label="获奖人员" />
-                <el-table-column prop="eventName" label="赛事" />
+                <el-table-column prop="recipient" label="获奖人员" class-name="hide-sm" />
+                <el-table-column prop="eventName" label="赛事" class-name="hide-sm" />
                 <el-table-column prop="awardLevel" label="级别" />
-                <el-table-column prop="awardDate" label="获奖时间" width="120" />
+                <el-table-column prop="awardDate" label="获奖时间" width="120" class-name="hide-sm" />
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="{ row }">
                         <el-tag v-if="row.status === 0" type="success">正常</el-tag>
@@ -55,14 +55,24 @@
                         <el-tag v-else type="info">未知</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="360" fixed="right">
+                <el-table-column label="操作" :width="isMobile ? 160 : 360" fixed="right">
                     <template #default="{ row }">
-                        <el-button size="small" @click="viewDetail(row)">查看</el-button>
-                        <el-button size="small" type="primary" @click="editRow(row)">修改</el-button>
-                        <el-button size="small" type="danger" @click="deleteRow(row)">删除</el-button>
-                        <el-button size="small" type="warning" @click="topRow(row)">
-                            {{ row.isPinned ? '取消置顶' : '置顶' }}
-                        </el-button>
+                        <div class="op-cell">
+                            <el-button size="small" :icon="isMobile ? View : undefined" @click="viewDetail(row)">
+                                {{ isMobile ? '' : '查看' }}
+                            </el-button>
+                            <el-button size="small" type="primary" :icon="isMobile ? Edit : undefined"
+                                @click="editRow(row)">
+                                {{ isMobile ? '' : '修改' }}
+                            </el-button>
+                            <el-button size="small" type="danger" :icon="isMobile ? Delete : undefined"
+                                @click="deleteRow(row)">
+                                {{ isMobile ? '' : '删除' }}
+                            </el-button>
+                            <el-button size="small" type="warning" :icon="isMobile ? Top : undefined" @click="topRow(row)">
+                                {{ isMobile ? (row.isPinned ? '取消' : '置顶') : (row.isPinned ? '取消置顶' : '置顶') }}
+                            </el-button>
+                        </div>
                     </template>
                 </el-table-column>
             </el-table>
@@ -153,11 +163,14 @@
 import { reactive, ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { View, Edit, Delete, Top } from '@element-plus/icons-vue'
 import axios from 'axios'
 import type { ApiResponse, Certificate, PageResult } from '../api/api'
 import { loadUserInfo } from '../utils/storage'
+import { useIsMobile } from '../utils/responsive'
 
 const route = useRoute()
+const { isMobile } = useIsMobile()
 
 // 当前用户角色：决定删除行为（超管直接删除，普通管理员提交申请）
 const isSuperAdmin = loadUserInfo()?.role === 'SUPER_ADMIN'
@@ -435,5 +448,41 @@ onMounted(() => {
 .preview-tip {
     color: #67c23a;
     font-size: 12px;
+}
+
+/* 操作列按钮容器：flex 均匀排布，换行也对齐（el-button 相邻默认 margin-left 会错位，重置后用 gap） */
+.op-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.op-cell .el-button+.el-button {
+    margin-left: 0;
+}
+
+/* ===== 移动端适配（≤768px）===== */
+@media (max-width: 768px) {
+    /* 检索表单：每个字段独占一行，控件全宽 */
+    .search-card :deep(.el-form--inline .el-form-item) {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 12px;
+    }
+
+    .search-card :deep(.el-form-item__content) {
+        flex: 1;
+    }
+
+    .search-card :deep(.el-form-item .el-input),
+    .search-card :deep(.el-form-item .el-select) {
+        width: 100% !important;
+    }
+
+    /* 手机隐藏次要列（class-name="hide-sm"）：只留 名称/级别/状态/操作 */
+    .list-card :deep(th.hide-sm),
+    .list-card :deep(td.hide-sm) {
+        display: none;
+    }
 }
 </style>

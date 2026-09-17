@@ -12,7 +12,7 @@
                 <el-select v-model="level" placeholder="全部等级" clearable class="level-select" @change="handleFilterChange">
                     <el-option v-for="lv in LEVELS" :key="lv" :label="lv" :value="lv" />
                 </el-select>
-                <el-button :icon="HomeFilled" @click="$router.push('/')">返回主页</el-button>
+                <el-button :icon="HomeFilled" class="home-btn" @click="$router.push('/')">返回主页</el-button>
             </div>
         </header>
 
@@ -289,5 +289,74 @@ onMounted(fetchData)
     width: 80px;
     display: inline-block;
     margin-right: 10px;
+}
+
+/* ===== 移动端适配（≤768px）===== */
+@media (max-width: 768px) {
+    /* 顶栏改两行：标题一行，工具栏全宽换行 */
+    .top-bar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 8px 12px;
+        row-gap: 8px;
+    }
+
+    .page-title {
+        font-size: 17px;
+    }
+
+    .toolbar {
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+    }
+
+    .sort-select {
+        flex: 1 1 170px;
+        width: auto;
+    }
+
+    .level-select {
+        flex: 1 1 110px;
+        width: auto;
+    }
+
+    /* 返回主页只留图标，省空间 */
+    .home-btn :deep(span) {
+        display: none;
+    }
+
+    .content {
+        padding: 16px 12px 40px;
+    }
+
+    .card-img {
+        width: 110px;
+        height: 80px;
+    }
+
+    /* 详情弹窗：图上文下 */
+    .detail-body {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .detail-img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 3;
+    }
+
+    .detail-row {
+        font-size: 14px;
+    }
+
+    .detail-row .label {
+        width: 72px;
+        margin-right: 8px;
+    }
+
+    .pager {
+        justify-content: center;
+    }
 }
 </style>

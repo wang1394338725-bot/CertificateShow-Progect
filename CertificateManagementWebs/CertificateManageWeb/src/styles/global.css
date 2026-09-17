@@ -3,8 +3,13 @@
   padding: 0;
   box-sizing: border-box;
 }
+/* 纵向滚动必须放开：主页/公开页内容超一屏要能下滑（此前 overflow:hidden 把内容裁掉无法滚动）。
+   管理后台的内部滚动由 AdminLayout 自身的 height:100vh + overflow:hidden 负责，不依赖这里 */
 html, body, #app {
   width: 100%;
+  min-height: 100%;
+}
+html, body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden; /* 只防横向溢出，不影响纵向滚动 */
 }

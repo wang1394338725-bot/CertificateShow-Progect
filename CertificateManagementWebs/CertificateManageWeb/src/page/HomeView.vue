@@ -14,15 +14,15 @@
             <div class="search-area">
                 <el-input v-model="keyword" placeholder="搜索奖状名称 / 获奖成员 / 赛事名称" clearable class="keyword-input"
                     @keyup.enter="handleSearch" @clear="backToShowcase" />
-                <el-select v-model="level" placeholder="奖状等级" clearable class="level-select">
+                <el-select v-model="level" placeholder="等级" clearable class="level-select">
                     <el-option v-for="lv in LEVELS" :key="lv" :label="lv" :value="lv" />
                 </el-select>
-                <el-button type="primary" @click="handleSearch">搜索</el-button>
+                <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
                 <el-button v-if="searchMode" @click="backToShowcase">返回展示</el-button>
             </div>
 
             <div class="login-area">
-                <el-button type="primary" plain @click="$router.push('/login')">管理员登录</el-button>
+                <el-button type="primary" plain @click="$router.push('/login')">管理员入口</el-button>
             </div>
         </header>
 
@@ -132,6 +132,11 @@
             </template>
         </main>
 
+        <!-- 备案号：工信部要求公示在网站底部 -->
+        <footer class="icp-footer">
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">皖ICP备2026031376号-1</a>
+        </footer>
+
         <!-- 详情弹窗：屏幕正中心，图片在左，具体信息在右 -->
         <el-dialog v-model="detailVisible" :title="detail?.title" width="920px" align-center class="detail-dialog">
             <div class="detail-body" v-if="detail">
@@ -158,6 +163,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted } from 'vue'
+import { Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 interface Certificate {
@@ -504,6 +510,22 @@ onMounted(() => {
     justify-content: flex-end;
 }
 
+/* 备案号页脚：低调小字，随主题变色 */
+.icp-footer {
+    text-align: center;
+    padding: 4px 0 20px;
+    font-size: 12px;
+}
+
+.icp-footer a {
+    color: var(--hp-sub);
+    text-decoration: none;
+}
+
+.icp-footer a:hover {
+    color: #409eff;
+}
+
 /* 详情弹窗：更大、居中 */
 .detail-body {
     display: flex;
@@ -536,5 +558,103 @@ onMounted(() => {
     width: 80px;
     display: inline-block;
     margin-right: 10px;
+}
+
+/* ===== 移动端适配（≤768px）===== */
+@media (max-width: 768px) {
+    /* 顶栏改两行：第一行主题切换+登录，第二行搜索区全宽 */
+    .top-bar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 8px 12px;
+        row-gap: 8px;
+    }
+
+    .login-area {
+        margin-left: auto;
+    }
+
+    /* 搜索区一行排布：输入框弹性占满剩余宽度，等级下拉收窄，按钮只留图标 */
+    .search-area {
+        flex: 1 1 100%;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+
+    .keyword-input {
+        flex: 1;
+        width: auto;
+        min-width: 0;
+    }
+
+    .level-select {
+        width: 88px;
+        flex-shrink: 0;
+    }
+
+    /* 搜索按钮只留放大镜图标 */
+    .search-area :deep(.el-button--primary span) {
+        display: none;
+    }
+
+    .content {
+        padding: 16px 12px 40px;
+    }
+
+    .section-title {
+        font-size: 16px;
+    }
+
+    /* 前三名固定三列 → 单列纵排；横排卡片图缩小 */
+    .card-row.three {
+        grid-template-columns: 1fr;
+    }
+
+    .card-img {
+        width: 110px;
+        height: 80px;
+    }
+
+    /* 搜索结果行：手机只留 等级+标题+日期，其余隐藏 */
+    .result-row {
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        padding: 12px 14px;
+    }
+
+    .result-row .c-sub {
+        display: none;
+    }
+
+    .result-row .date {
+        display: block;
+        margin-left: auto;
+        font-size: 12px;
+    }
+
+    /* 详情弹窗：图上文下 */
+    .detail-body {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .detail-img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 3;
+    }
+
+    .detail-row {
+        font-size: 14px;
+    }
+
+    .detail-row .label {
+        width: 72px;
+        margin-right: 8px;
+    }
+
+    .pager {
+        justify-content: center;
+    }
 }
 </style>

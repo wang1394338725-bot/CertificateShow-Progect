@@ -112,8 +112,10 @@ const handleCommand = (cmd: string) => {
             cancelButtonText: '取消',
             type: 'warning'
         }).then(() => {
-            // 退出逻辑
+            // 退出逻辑：清登录态但保留"消息最后查看时间"，否则下次登录所有旧消息都会被当成新消息（红点常亮）
+            const lastRead = localStorage.getItem(AUDIT_READ_KEY)
             localStorage.clear()
+            if (lastRead) localStorage.setItem(AUDIT_READ_KEY, lastRead)
             window.location.href = '/login'
         }).catch(() => { })
     }
@@ -188,6 +190,7 @@ const isSuperAdmin = computed(() => userInfo?.role === "SUPER_ADMIN");
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0; /* 关键：flex 子项默认 min-width:auto，内容过宽会把整页撑出横向滚动空隙 */
     height: 100vh;
     overflow: hidden;
 }
@@ -262,13 +265,32 @@ const isSuperAdmin = computed(() => userInfo?.role === "SUPER_ADMIN");
     }
 
     .admin-aside .logo {
-        font-size: 14px;
-        padding: 0 10px;
+        /* 4 个字缩小后刚好放进 60px 窄条 */
+        font-size: 13px;
+        padding: 0 4px;
+        line-height: 60px;
     }
 
     .admin-aside .el-menu-item span {
         display: none;
         /* 隐藏文字，只显示图标 */
+    }
+
+    /* 顶栏：返回主页只留图标，标题缩小 */
+    .home-btn :deep(span) {
+        display: none;
+    }
+
+    .header-left {
+        font-size: 15px;
+    }
+
+    .admin-header {
+        padding: 0 10px;
+    }
+
+    .header-right {
+        gap: 8px;
     }
 
     .admin-main {

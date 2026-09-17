@@ -26,5 +26,17 @@ uploads/
 .DS_Store
 Thumbs.db
 
+# ---- 部署产物 / 本地数据（不入库） ----
+deploy/backend/
+deploy/sql/dump.sql
+*.tar.gz
+
+# ---- 本地笔记与记忆文件（仅本地保留） ----
+知识点笔记.md
+AI问题记录与避坑Prompt.md
+project_memory.md
+暂时
+root@*
+
 # ---- 旧仓库备份（原 Gitee 后端仓库历史） ----
 .git-gitee-backup/

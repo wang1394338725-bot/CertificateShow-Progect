@@ -33,6 +33,7 @@ export default defineConfig({
     ],
   },
   server: {
+    host: true, // 监听局域网：手机连同一 WiFi 可通过电脑 IP 访问，便于实测移动端效果
     warmup: {
       // 启动时预先编译主页，进一步缩短首次进入时间
       clientFiles: ["./src/page/HomeView.vue"],

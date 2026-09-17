@@ -25,7 +25,7 @@ services:
     container_name: cert-backend
     environment:
       TZ: Asia/Shanghai
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/certificate_management?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/certificate_management?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
@@ -42,11 +42,13 @@ services:
     image: nginx:alpine
     container_name: cert-nginx
     ports:
-      - "80:80"               # 唯一对外端口；数据库和后端都不暴露
+      - "80:80"               # HTTP 只做 301 跳 HTTPS
+      - "443:443"             # HTTPS 对外入口（证书在 ./certs）
     volumes:
       - ./dist:/usr/share/nginx/html:ro          # 前端构建产物
       - ./uploads:/data/uploads:ro               # 与 backend 共享图片目录（nginx 只读直出）
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro              # acme.sh 安装的 HTTPS 证书
     depends_on:
       - backend
     restart: unless-stopped

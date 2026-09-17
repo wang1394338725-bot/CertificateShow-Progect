@@ -28,6 +28,7 @@ const router = createRouter({
       path: "/admin",
       name: "AdminLayout",
       component: AdminLayout,
+      redirect: "/admin/browse", // 直接访问 /admin 或免密自动进入时，落到第一个功能页
       children: [
         {
           path: "upload",
@@ -71,13 +72,13 @@ const router = createRouter({
 });
 
 router.beforeEach((to, _from) => {
-  if (to.path === "/Login") {
-    const token = loadToken(); // 你的读取 Token 方法
-    if (token) {
-      return "/admin"; // 已登录 -> 去后台
-    } else {
-      return "/login"; // 未登录 -> 去登录页
+  // 访问登录页时检测本地 token：有效（或可无感刷新）则直接进后台，无需重复输密码；
+  // 仅当主动退出登录（token 被清除）后才需要再次输入账号密码
+  if (to.name === "Login") {
+    if (loadToken()) {
+      return "/admin"; // 已登录 -> 免密进入后台
     }
+    return true; // 未登录 -> 正常显示登录页
   }
 
   const userinfo = loadUserInfo();
