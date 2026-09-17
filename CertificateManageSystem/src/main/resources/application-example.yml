@@ -29,4 +29,7 @@ server:
 # 上传文件存储根目录（部署时改为服务器路径或 Docker 挂载卷，代码通过 @Value 读取）
 upload:
   base-path: Your-upload-path
-
+# 答题门禁：答案与 HMAC 凭证密钥（部署时通过环境变量覆盖；GATE_SECRET 留空则复用 JWT_SECRET）
+gate:
+  answer: ${GATE_ANSWER:Your-answer}
+  secret: ${GATE_SECRET:${JWT_SECRET:}}

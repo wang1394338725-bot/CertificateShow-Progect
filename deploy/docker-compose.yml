@@ -29,6 +29,8 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      GATE_ANSWER: ${GATE_ANSWER:-}
+      GATE_SECRET: ${GATE_SECRET:-}
       UPLOAD_BASE_PATH: /data/uploads
     volumes:
       - ./uploads:/data/uploads

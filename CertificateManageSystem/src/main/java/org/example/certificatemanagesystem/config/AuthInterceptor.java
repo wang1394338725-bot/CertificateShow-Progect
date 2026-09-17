@@ -24,6 +24,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             "/uploads/",
             "/certificate/login",
             "/certificate/refresh-token",
+            "/certificate/gate/",
             "/certificate/home",
             "/certificate/search",
             "/certificate/view"

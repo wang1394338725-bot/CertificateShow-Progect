@@ -2,6 +2,14 @@ import type { UserInfo } from "../api/api";
 
 const TOKEN_KEY = "token";
 const USER_INFO_KEY = "userinfo";
+const GATE_KEY = "gate_token";
+
+// 门禁 token：答对门禁题后获得，访问公开内容接口时作为 X-Gate-Token 携带
+export const saveGateToken = (token: string) => localStorage.setItem(GATE_KEY, token);
+
+export const loadGateToken = (): string | null => localStorage.getItem(GATE_KEY);
+
+export const clearGateToken = () => localStorage.removeItem(GATE_KEY);
 
 // 保存 token
 export const saveAuthData = (token: string, userinfo: UserInfo) => {

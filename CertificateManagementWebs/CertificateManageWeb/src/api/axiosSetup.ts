@@ -79,7 +79,18 @@ axios.interceptors.request.use(async (config) => {
 axios.interceptors.response.use(
   (res) => {
     const body = res.data;
-    if (body && typeof body === "object" && "code" in body && body.code !== 200) {
+    // 门禁拦截：公开数据接口要求先完成答题验证（IP 变化/凭证过期/未验证）→ 清标记并回验证页
+    if (body && typeof body === "object" && body.gate === true) {
+      localStorage.removeItem("gatePassed");
+      window.location.replace("/");
+      return Promise.reject(body);
+    }
+    if (
+      body &&
+      typeof body === "object" &&
+      "code" in body &&
+      body.code !== 200
+    ) {
       ElMessage.error(String(body.message || "操作失败"));
       return Promise.reject(body);
     }
