@@ -3,34 +3,19 @@
     <div class="upload-page">
         <el-card class="upload-card">
             <template #header>
-                <span>上传新奖状</span>
+                <span>上传新记录</span>
             </template>
             <el-form ref="formRef" :model="form" :rules="rules" label-width="120px" class="upload-form">
-                <el-form-item label="奖状名称" prop="title">
-                    <el-input v-model="form.title" placeholder="请输入奖状名称" />
+                <el-form-item label="记录名称" prop="title">
+                    <el-input v-model="form.title" placeholder="给这条记录起个名字" />
                 </el-form-item>
-                <el-form-item label="获奖人员" prop="recipient">
-                    <el-input v-model="form.recipient" placeholder="请输入获奖人员（多人用逗号分隔）" />
-                </el-form-item>
-                <el-form-item label="获奖赛事" prop="eventName">
-                    <el-input v-model="form.eventName" placeholder="请输入获奖赛事" />
-                </el-form-item>
-                <el-form-item label="获奖级别" prop="awardLevel">
-                    <el-select v-model="form.awardLevel" placeholder="请选择获奖级别">
-                        <el-option label="国家级" value="国家级" />
-                        <el-option label="省级" value="省级" />
-                        <el-option label="市级" value="市级" />
-                        <el-option label="校级" value="校级" />
-                        <el-option label="其他" value="其他" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="获奖项目（可选）" prop="projectName">
-                    <el-input v-model="form.projectName" placeholder="请输入获奖项目（可选）" />
-                </el-form-item>
-                <el-form-item label="获奖时间" prop="awardDate">
+                <el-form-item label="记录日期" prop="awardDate">
                     <el-date-picker v-model="form.awardDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" />
                 </el-form-item>
-                <el-form-item label="奖状图片" prop="image">
+                <el-form-item label="想法（选填）" prop="organization">
+                    <el-input v-model="form.organization" type="textarea" rows="3" placeholder="记录此刻的想法或吐槽…" />
+                </el-form-item>
+                <el-form-item label="记录图片" prop="image">
                     <input type="file" accept="image/*" @change="handleImageChange" ref="fileInput"
                         class="hidden-file-input" />
                     <div>
@@ -38,7 +23,7 @@
                         <div class="tip">点击后在手机上可拍照或从相册选择；支持 JPG/PNG，单张不超过 5MB，图片保存在服务器本地</div>
                     </div>
                     <div v-if="imagePreview" class="image-preview">
-                        <img :src="imagePreview" alt="奖状预览" style="max-width: 200px; max-height: 200px;" />
+                        <img :src="imagePreview" alt="记录预览" style="max-width: 200px; max-height: 200px;" />
                     </div>
                 </el-form-item>
                 <el-form-item>
@@ -48,8 +33,8 @@
             </el-form>
         </el-card>
 
-        <!-- Excel 批量导入 -->
-        <el-card class="upload-card import-card">
+        <!-- 后端接口保留，前端暂不展示（showImportCard 恒为 false；不用字面量 v-if="false" 是因为它会触发 vue-tsc 对模板类型收窄的缺陷） -->
+        <el-card v-if="showImportCard" class="upload-card import-card">
             <template #header>
                 <span>Excel 批量导入</span>
             </template>
@@ -85,10 +70,7 @@ import type { ApiResponse } from '../api/api'
 // 表单数据
 const form = reactive({
     title: '',
-    recipient: '',
-    eventName: '',
-    awardLevel: '',
-    projectName: '',
+    organization: '',
     awardDate: '',
     image: null as File | null
 })
@@ -96,13 +78,10 @@ const form = reactive({
 const imagePreview = ref<string>('')
 const fileInput = ref<HTMLInputElement>()
 
-// 表单校验规则
+// 表单校验规则（仅记录名称与记录日期）
 const rules: FormRules = {
-    title: [{ required: true, message: '请输入奖状名称', trigger: 'blur' }],
-    recipient: [{ required: true, message: '请输入获奖人员', trigger: 'blur' }],
-    eventName: [{ required: true, message: '请输入获奖赛事', trigger: 'blur' }],
-    awardLevel: [{ required: true, message: '请选择获奖级别', trigger: 'change' }],
-    awardDate: [{ required: true, message: '请选择获奖时间', trigger: 'change' }]
+    title: [{ required: true, message: '请输入记录名称', trigger: 'blur' }],
+    awardDate: [{ required: true, message: '请选择记录日期', trigger: 'change' }]
 }
 
 const formRef = ref<FormInstance>()
@@ -140,7 +119,7 @@ const submitForm = async () => {
     if (!formRef.value) return
     await formRef.value.validate()
     if (!form.image) {
-        ElMessage.warning('请选择奖状图片')
+        ElMessage.warning('请选择记录图片')
         return
     }
     submitting.value = true
@@ -149,10 +128,12 @@ const submitForm = async () => {
         const formData = new FormData()
         formData.append('file', form.image)          // 对应后端的 @RequestParam("file")
         formData.append('title', form.title)
-        formData.append('recipient', form.recipient)
-        formData.append('eventName', form.eventName)
-        formData.append('awardLevel', form.awardLevel)
-        formData.append('projectName', form.projectName || '')
+        formData.append('organization', form.organization)
+        // 以下字段后端仍接收：人员/赛事/项目前端不再收集，固定传空；级别固定「其他」
+        formData.append('recipient', '')
+        formData.append('eventName', '')
+        formData.append('awardLevel', '其他')
+        formData.append('projectName', '')
         formData.append('awardDate', form.awardDate) // 格式为 YYYY-MM-DD，后端可直接解析为 LocalDate
 
         const res = await axios.post<ApiResponse<String>>('/api/certificate/upload', formData, {
@@ -162,7 +143,7 @@ const submitForm = async () => {
         });
 
         if (res.data.code === 200) {
-            ElMessage.success('奖状上传成功')
+            ElMessage.success('记录上传成功')
             resetForm()
         }
     } catch {
@@ -175,12 +156,9 @@ const submitForm = async () => {
 // 重置
 const resetForm = () => {
     formRef.value?.resetFields()
-    // 重置表单数据（包括可选字段置空）
+    // 重置表单数据
     form.title = ''
-    form.recipient = ''
-    form.eventName = ''
-    form.awardLevel = ''
-    form.projectName = ''
+    form.organization = ''
     form.awardDate = ''
     form.image = null // 清空文件对象
     imagePreview.value = ''
@@ -190,6 +168,9 @@ const resetForm = () => {
 }
 
 // ---------- Excel 批量导入 ----------
+// 后端 /api/certificate/import 接口保留，前端暂不展示该卡片
+const showImportCard = false
+
 interface ImportResult {
     total: number
     successCount: number

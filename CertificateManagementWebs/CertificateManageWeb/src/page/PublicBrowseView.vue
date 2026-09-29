@@ -1,24 +1,17 @@
-<!-- PublicBrowseView.vue：公开奖状一览页（访客视角）——仅供浏览，不含任何管理功能 -->
+<!-- PublicBrowseView.vue：公开记录一览页（访客视角）——仅供浏览，不含任何管理功能 -->
 <template>
     <div class="list-page">
         <!-- 顶部栏 -->
         <header class="top-bar">
-            <h1 class="page-title">奖状一览</h1>
+            <h1 class="page-title">记录一览</h1>
             <div class="toolbar">
-                <el-select v-model="sortBy" class="sort-select" @change="handleFilterChange">
-                    <el-option label="按获奖时间（新→旧）" value="time" />
-                    <el-option label="按等级（国家→省→市→校）" value="level" />
-                </el-select>
-                <el-select v-model="level" placeholder="全部等级" clearable class="level-select" @change="handleFilterChange">
-                    <el-option v-for="lv in LEVELS" :key="lv" :label="lv" :value="lv" />
-                </el-select>
                 <el-button :icon="HomeFilled" class="home-btn" @click="$router.push('/')">返回主页</el-button>
             </div>
         </header>
 
         <!-- 列表 -->
         <main class="content" v-loading="loading">
-            <el-empty v-if="!records.length && !loading" description="暂无奖状" />
+            <el-empty v-if="!records.length && !loading" description="暂无记录" />
             <div v-else class="card-grid">
                 <div v-for="c in records" :key="c.id" class="cert-card" @click="openDetail(c)">
                     <el-image :src="c.imageUrl" fit="cover" class="card-img" loading="lazy">
@@ -28,11 +21,8 @@
                     </el-image>
                     <div class="card-info">
                         <div class="c-title">{{ c.title }}</div>
-                        <div class="c-meta">
-                            <el-tag size="small" :type="levelTagType(c.awardLevel)">{{ c.awardLevel }}</el-tag>
-                            <span class="c-date">{{ c.awardDate }}</span>
-                        </div>
-                        <div class="c-sub">{{ c.recipient }}</div>
+                        <div class="c-date">{{ c.awardDate }}</div>
+                        <div v-if="c.organization?.trim()" class="c-sub">{{ c.organization }}</div>
                     </div>
                 </div>
             </div>
@@ -41,7 +31,7 @@
         </main>
 
         <!-- 详情弹窗 -->
-        <el-dialog v-model="detailVisible" :title="detail?.title" width="860px" align-center class="detail-dialog">
+        <el-dialog v-model="detailVisible" title="记录详情" width="860px" align-center class="detail-dialog">
             <div class="detail-body" v-if="detail">
                 <el-image :src="detail.imageUrl" fit="contain" class="detail-img" loading="lazy"
                     :preview-src-list="[detail.imageUrl]" hide-on-click-modal>
@@ -50,14 +40,9 @@
                     </template>
                 </el-image>
                 <div class="detail-info">
-                    <div class="detail-row"><span class="label">获奖成员</span><span>{{ detail.recipient }}</span></div>
-                    <div class="detail-row"><span class="label">赛事名称</span><span>{{ detail.eventName }}</span></div>
-                    <div class="detail-row"><span class="label">所属项目</span><span>{{ detail.projectName }}</span></div>
-                    <div class="detail-row">
-                        <span class="label">奖状等级</span>
-                        <el-tag :type="levelTagType(detail.awardLevel)" size="large">{{ detail.awardLevel }}</el-tag>
-                    </div>
-                    <div class="detail-row"><span class="label">获奖日期</span><span>{{ detail.awardDate }}</span></div>
+                    <div class="detail-row"><span class="label">记录名称</span><span>{{ detail.title }}</span></div>
+                    <div class="detail-row"><span class="label">记录日期</span><span>{{ detail.awardDate }}</span></div>
+                    <div class="detail-row"><span class="label">想法</span><span>{{ detail.organization?.trim() || '—' }}</span></div>
                 </div>
             </div>
         </el-dialog>
@@ -66,29 +51,12 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import { HomeFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
 import type { ApiResponse, Certificate, PageResult } from '../api/api'
 
-const route = useRoute()
-
-const LEVELS = ['国家级', '省级', '市级', '校级', '其他']
-
-const levelTagType = (level?: string) => {
-    switch (level) {
-        case '国家级': return 'danger'
-        case '省级': return 'warning'
-        case '市级': return 'success'
-        case '校级': return 'primary'
-        default: return 'info'
-    }
-}
-
 // ---------- 列表数据 ----------
-// 公开页固定只看正常状态（status=0）：待审核删除/已隐藏的奖状仅管理员可见
-const sortBy = ref<'time' | 'level'>((route.query.sortBy as 'level') || 'time')
-const level = ref('')
+// 公开页固定只看正常状态（status=0）且按时间倒序：待审核删除/已隐藏的记录仅管理员可见
 const records = ref<Certificate[]>([])
 const loading = ref(false)
 const page = reactive({ current: 1, size: 12, total: 0 })
@@ -99,9 +67,8 @@ const fetchData = async () => {
         const res = await axios.post<ApiResponse<PageResult<Certificate>>>('/api/certificate/view', {
             current: page.current,
             size: page.size,
-            level: level.value || undefined,
             status: '0',
-            sortBy: sortBy.value
+            sortBy: 'time'
         })
         if (res.data.code === 200) {
             records.value = res.data.data.records
@@ -112,11 +79,6 @@ const fetchData = async () => {
     } finally {
         loading.value = false
     }
-}
-
-const handleFilterChange = () => {
-    page.current = 1
-    fetchData()
 }
 
 // ---------- 详情弹窗 ----------
@@ -163,14 +125,6 @@ onMounted(fetchData)
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-.sort-select {
-    width: 200px;
-}
-
-.level-select {
-    width: 120px;
 }
 
 .content {
@@ -220,12 +174,6 @@ onMounted(fetchData)
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.c-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .c-date {
@@ -308,16 +256,6 @@ onMounted(fetchData)
     .toolbar {
         flex: 1 1 100%;
         flex-wrap: wrap;
-    }
-
-    .sort-select {
-        flex: 1 1 170px;
-        width: auto;
-    }
-
-    .level-select {
-        flex: 1 1 110px;
-        width: auto;
     }
 
     /* 返回主页只留图标，省空间 */

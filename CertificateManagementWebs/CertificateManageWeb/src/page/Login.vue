@@ -4,8 +4,8 @@
         <el-card class="login-card">
             <template #header>
                 <div class="card-header">
-                    <h2>奖状管理系统</h2>
-                    <span>管理员登录</span>
+                    <h2>个人生活记录</h2>
+                    <span>管理登录</span>
                 </div>
             </template>
 

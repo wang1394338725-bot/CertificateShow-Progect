@@ -1,21 +1,9 @@
 <!-- BrowseView.vue -->
 <template>
     <div class="browse-container">
-        <!-- 检索区域（保持不变） -->
+        <!-- 检索区域：仅保留状态筛选与排序 -->
         <el-card class="search-card">
             <el-form :model="searchForm" inline>
-                <el-form-item label="关键词">
-                    <el-input v-model="searchForm.keyword" placeholder="奖状名称/获奖人员" />
-                </el-form-item>
-                <el-form-item label="获奖级别">
-                    <el-select v-model="searchForm.level" placeholder="全部" clearable>
-                        <el-option label="国家级" value="国家级" />
-                        <el-option label="省级" value="省级" />
-                        <el-option label="市级" value="市级" />
-                        <el-option label="校级" value="校级" />
-                        <el-option label="其他" value="其他" />
-                    </el-select>
-                </el-form-item>
                 <el-form-item label="状态">
                     <el-select v-model="searchForm.status" placeholder="全部" clearable>
                         <!-- value 必须与数据库 status 编码一致：0-正常，1-待审核删除，2-已隐藏 -->
@@ -26,14 +14,13 @@
                 </el-form-item>
                 <el-form-item label="排序">
                     <el-select v-model="searchForm.sortBy" placeholder="默认（置顶优先）" @change="handleSearch">
-                        <el-option label="按等级（国家→省→市→校）" value="level" />
-                        <el-option label="按获奖时间（新→旧）" value="time" />
+                        <el-option label="按记录时间（新→旧）" value="time" />
                     </el-select>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="handleSearch">检索</el-button>
                     <el-button @click="resetSearch">重置</el-button>
-                    <el-button type="success" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
+                    <el-button type="success" :loading="exporting" @click="exportExcel">批量导出</el-button>
                 </el-form-item>
             </el-form>
         </el-card>
@@ -41,12 +28,15 @@
         <!-- 列表 -->
         <el-card class="list-card">
             <el-table :data="tableData" style="width: 100%" v-loading="loading">
-                <el-table-column prop="id" label="ID" width="80" class-name="hide-sm" />
-                <el-table-column prop="title" label="奖状名称" />
-                <el-table-column prop="recipient" label="获奖人员" class-name="hide-sm" />
-                <el-table-column prop="eventName" label="赛事" class-name="hide-sm" />
-                <el-table-column prop="awardLevel" label="级别" />
-                <el-table-column prop="awardDate" label="获奖时间" width="120" class-name="hide-sm" />
+                <el-table-column label="图片" width="110">
+                    <template #default="{ row }">
+                        <el-image v-if="row.imageUrl" :src="row.imageUrl" fit="cover" class="row-thumb"
+                            :preview-src-list="[row.imageUrl]" preview-teleported hide-on-click-modal />
+                        <span v-else class="no-image-tip">无图</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="title" label="记录名称" min-width="160" />
+                <el-table-column prop="awardDate" label="记录日期" width="120" />
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="{ row }">
                         <el-tag v-if="row.status === 0" type="success">正常</el-tag>
@@ -80,24 +70,26 @@
                 layout="total, sizes, prev, pager, next" @size-change="fetchData" @current-change="fetchData" />
         </el-card>
 
-        <!-- 查看弹窗（优化：展示图片，样式更规范） -->
-        <el-dialog v-model="viewDialogVisible" title="奖状详情" width="600px">
+        <!-- 查看弹窗：图片 + 记录信息 -->
+        <el-dialog v-model="viewDialogVisible" title="记录详情" width="600px">
             <el-descriptions :column="1" border v-if="currentDetail">
-                <el-descriptions-item label="奖状名称">{{ currentDetail.title }}</el-descriptions-item>
-                <el-descriptions-item label="获奖人员">{{ currentDetail.recipient }}</el-descriptions-item>
-                <el-descriptions-item label="获奖赛事">{{ currentDetail.eventName }}</el-descriptions-item>
-                <el-descriptions-item label="获奖级别">{{ currentDetail.awardLevel }}</el-descriptions-item>
-                <el-descriptions-item label="获奖项目">{{ currentDetail.projectName || '无' }}</el-descriptions-item>
-                <el-descriptions-item label="获奖时间">{{ currentDetail.awardDate }}</el-descriptions-item>
-                <el-descriptions-item label="状态">{{ currentDetail.status }}</el-descriptions-item>
-                <el-descriptions-item label="证书图片" v-if="currentDetail.imageUrl">
+                <el-descriptions-item label="记录名称">{{ currentDetail.title }}</el-descriptions-item>
+                <el-descriptions-item label="记录日期">{{ currentDetail.awardDate }}</el-descriptions-item>
+                <el-descriptions-item label="想法">{{ currentDetail.organization || '—' }}</el-descriptions-item>
+                <el-descriptions-item label="状态">
+                    <el-tag v-if="currentDetail.status === 0" type="success">正常</el-tag>
+                    <el-tag v-else-if="currentDetail.status === 1" type="warning">待审核删除</el-tag>
+                    <el-tag v-else-if="currentDetail.status === 2" type="info">已隐藏</el-tag>
+                    <el-tag v-else type="info">未知</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="记录图片" v-if="currentDetail.imageUrl">
                     <el-image :src="currentDetail.imageUrl" style="max-width: 100%; max-height: 300px" fit="contain" />
                 </el-descriptions-item>
             </el-descriptions>
         </el-dialog>
 
         <!-- 删除理由弹窗 -->
-        <el-dialog v-model="deleteDialogVisible" title="删除奖状" width="500px">
+        <el-dialog v-model="deleteDialogVisible" title="删除记录" width="500px">
             <el-form ref="deleteFormRef" :model="deleteForm" :rules="deleteRules" label-width="80px">
                 <el-form-item label="删除理由" prop="reason">
                     <el-input v-model="deleteForm.reason" type="textarea" rows="4" placeholder="请简要说明删除原因（必填）" />
@@ -109,36 +101,22 @@
             </template>
         </el-dialog>
 
-        <el-dialog v-model="editDialogVisible" title="修改奖状" width="600px">
+        <el-dialog v-model="editDialogVisible" title="修改记录" width="600px">
             <el-form :model="editForm" label-width="100px">
-                <el-form-item label="奖状名称">
+                <el-form-item label="记录名称">
                     <el-input v-model="editForm.title" />
                 </el-form-item>
-                <el-form-item label="获奖人员">
-                    <el-input v-model="editForm.recipient" />
-                </el-form-item>
-                <el-form-item label="获奖赛事">
-                    <el-input v-model="editForm.eventName" />
-                </el-form-item>
-                <el-form-item label="获奖级别">
-                    <el-select v-model="editForm.awardLevel">
-                        <el-option label="国家级" value="国家级" />
-                        <el-option label="省级" value="省级" />
-                        <el-option label="市级" value="市级" />
-                        <el-option label="校级" value="校级" />
-                        <el-option label="其他" value="其他" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="获奖项目">
-                    <el-input v-model="editForm.projectName" />
-                </el-form-item>
-                <el-form-item label="获奖时间">
+                <el-form-item label="记录日期">
                     <el-date-picker v-model="editForm.awardDate" type="date" value-format="YYYY-MM-DD" />
+                </el-form-item>
+                <el-form-item label="想法（选填）">
+                    <el-input v-model="editForm.organization" type="textarea" rows="3"
+                        placeholder="记录此刻的想法或吐槽…" />
                 </el-form-item>
                 <el-form-item label="当前图片">
                     <el-image v-if="editForm.imageUrl" :src="editForm.imageUrl"
                         style="max-width: 160px; max-height: 160px" fit="contain" />
-                    <span v-else class="no-image-tip">暂无图片（Excel 导入的奖状可在此补传）</span>
+                    <span v-else class="no-image-tip">暂无图片（批量导入的记录可在此补传）</span>
                 </el-form-item>
                 <el-form-item label="更换图片">
                     <div>
@@ -160,8 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { View, Edit, Delete, Top } from '@element-plus/icons-vue'
 import axios from 'axios'
@@ -169,7 +146,6 @@ import type { ApiResponse, Certificate, PageResult } from '../api/api'
 import { loadUserInfo } from '../utils/storage'
 import { useIsMobile } from '../utils/responsive'
 
-const route = useRoute()
 const { isMobile } = useIsMobile()
 
 // 当前用户角色：决定删除行为（超管直接删除，普通管理员提交申请）
@@ -181,11 +157,9 @@ const loading = ref(false)
 const page = reactive({ current: 1, size: 10, total: 0 })
 
 const searchForm = reactive({
-    keyword: '',
-    level: '',
     status: '',
-    // 排序方式：level/time；主页「等级前三」「最新荣誉」标题跳转时经 URL query 带入
-    sortBy: (route.query.sortBy as string) || ''
+    // 排序方式：time；留空为默认（置顶优先）
+    sortBy: ''
 })
 
 // 查看
@@ -205,10 +179,13 @@ const editDialogVisible = ref(false)
 const editForm = reactive({
     id: 0,
     title: '',
+    // 后端字段保留：前端不再渲染输入框，编辑时透传原值
     recipient: '',
     eventName: '',
     awardLevel: '',
     projectName: '',
+    // 想法/吐槽附录（复用后端 organization 字段）
+    organization: '',
     awardDate: '',
     imageUrl: ''
 })
@@ -232,8 +209,6 @@ const fetchData = async () => {
         const params = {
             current: page.current,
             size: page.size,
-            keyword: searchForm.keyword || undefined,
-            level: searchForm.level || undefined,
             status: searchForm.status || undefined,
             sortBy: searchForm.sortBy || undefined
         };
@@ -259,8 +234,6 @@ const handleSearch = () => {
 }
 
 const resetSearch = () => {
-    searchForm.keyword = ''
-    searchForm.level = ''
     searchForm.status = ''
     searchForm.sortBy = ''
     handleSearch()
@@ -277,7 +250,7 @@ const exportExcel = async () => {
         const url = URL.createObjectURL(res.data as Blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `奖状导出_${new Date().toISOString().slice(0, 10)}.xlsx`
+        a.download = `记录导出_${new Date().toISOString().slice(0, 10)}.xlsx`
         a.click()
         URL.revokeObjectURL(url)
         ElMessage.success('导出成功')
@@ -287,15 +260,6 @@ const exportExcel = async () => {
         exporting.value = false
     }
 }
-
-// 页面被 keepAlive 缓存后再次从主页跳入：URL query 变化时同步排序并刷新
-watch(() => route.query.sortBy, (v) => {
-    const next = (v as string) || ''
-    if (next === searchForm.sortBy) return
-    searchForm.sortBy = next
-    page.current = 1
-    fetchData()
-})
 
 // 查看
 const viewDetail = (row: any) => {
@@ -310,6 +274,7 @@ const editRow = (row: any) => {
     editForm.eventName = row.eventName || ''
     editForm.awardLevel = row.awardLevel || ''
     editForm.projectName = row.projectName || '';
+    editForm.organization = row.organization || ''
     editForm.awardDate = row.awardDate || ''
     editForm.imageUrl = row.imageUrl || ''
     // 清空上一次的换图选择
@@ -381,7 +346,7 @@ const confirmDelete = async () => {
         );
 
         if (res.data.code == 200) {
-            ElMessage.success(isSuperAdmin ? '已直接删除该奖状' : '已提交删除申请，等待审核');
+            ElMessage.success(isSuperAdmin ? '已直接删除该记录' : '已提交删除申请，等待审核');
             deleteDialogVisible.value = false;
             fetchData();
         }
@@ -396,7 +361,7 @@ const confirmDelete = async () => {
 const topRow = (row: any) => {
     const target = !row.isPinned
     const action = target ? '置顶' : '取消置顶'
-    ElMessageBox.confirm(`确认${action}奖状“${row.title}”吗？`, '提示', {
+    ElMessageBox.confirm(`确认${action}记录“${row.title}”吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -438,6 +403,14 @@ onMounted(() => {
     font-size: 13px;
 }
 
+/* 列表缩略图 */
+.row-thumb {
+    width: 64px;
+    height: 48px;
+    border-radius: 4px;
+    display: block;
+}
+
 .new-image-preview {
     margin-top: 8px;
     display: flex;
@@ -477,12 +450,6 @@ onMounted(() => {
     .search-card :deep(.el-form-item .el-input),
     .search-card :deep(.el-form-item .el-select) {
         width: 100% !important;
-    }
-
-    /* 手机隐藏次要列（class-name="hide-sm"）：只留 名称/级别/状态/操作 */
-    .list-card :deep(th.hide-sm),
-    .list-card :deep(td.hide-sm) {
-        display: none;
     }
 }
 </style>

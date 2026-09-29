@@ -21,7 +21,7 @@ const router = createRouter({
       name: "PublicList",
       component: () => import("../page/PublicBrowseView.vue"),
       meta: {
-        title: "奖状一览",
+        title: "记录一览",
       },
     },
     {
@@ -40,7 +40,7 @@ const router = createRouter({
           name: "Upload",
           component: () => import("../page/UploadView.vue"),
           meta: {
-            title: "上传奖状",
+            title: "上传记录",
           },
         },
         {
@@ -48,7 +48,7 @@ const router = createRouter({
           name: "Browse",
           component: () => import("../page/BrowseView.vue"),
           meta: {
-            title: "奖状浏览",
+            title: "记录浏览",
             requiresAuth: true,
             keepAlive: true,
           },

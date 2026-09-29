@@ -1,8 +1,12 @@
-<!-- HomeView.vue：公开门户主页（默认页面）——三区块横排 + 主题切换 + 搜索 + 详情弹窗 -->
+<!-- HomeView.vue：公开门户主页（默认页面）——三区块横排 + 主题切换 + 详情弹窗 -->
 <template>
     <div class="home-page" :class="`theme-${theme}`">
-        <!-- 顶部栏：主题切换 | 搜索区（居中偏右） | 登录按钮 -->
+        <!-- 顶部栏：品牌 | 主题切换 | 登录按钮 -->
         <header class="top-bar">
+            <div class="brand">
+                <h1 class="brand-title">个人生活记录</h1>
+                <span class="brand-sub">记录生活的点点滴滴</span>
+            </div>
             <div class="theme-switch">
                 <el-radio-group v-model="theme" size="small">
                     <el-radio-button value="light">白</el-radio-button>
@@ -10,126 +14,85 @@
                     <el-radio-button value="eye">护眼</el-radio-button>
                 </el-radio-group>
             </div>
-
-            <div class="search-area">
-                <el-input v-model="keyword" placeholder="搜索奖状名称 / 获奖成员 / 赛事名称" clearable class="keyword-input"
-                    @keyup.enter="handleSearch" @clear="backToShowcase" />
-                <el-select v-model="level" placeholder="等级" clearable class="level-select">
-                    <el-option v-for="lv in LEVELS" :key="lv" :label="lv" :value="lv" />
-                </el-select>
-                <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
-                <el-button v-if="searchMode" @click="backToShowcase">返回展示</el-button>
-            </div>
-
             <div class="login-area">
                 <el-button type="primary" plain @click="$router.push('/login')">管理员入口</el-button>
             </div>
         </header>
 
         <main class="content" v-loading="loading">
-            <!-- ===== 展示模式：三条横向区块，块内卡片横排并列 ===== -->
-            <template v-if="!searchMode">
-                <!-- 置顶推荐 -->
-                <section class="section">
-                    <h2 class="section-title">置顶推荐</h2>
-                    <el-empty v-if="!home.pinned.length" description="暂无置顶奖状" :image-size="60" />
-                    <div v-else class="card-row">
-                        <div v-for="c in home.pinned" :key="'p' + c.id" class="cert-card pinned" @click="openDetail(c)">
-                            <el-image :src="c.imageUrl" fit="cover" class="card-img" loading="lazy">
+            <!-- ===== 三条横向区块，卡片纵排：想法在上、图片居中、名称日期在下 ===== -->
+            <!-- 置顶推荐 -->
+            <section class="section">
+                <h2 class="section-title">置顶推荐</h2>
+                <el-empty v-if="!home.pinned.length" description="暂无置顶记录" :image-size="60" />
+                <div v-else class="card-row">
+                    <div v-for="c in home.pinned" :key="'p' + c.id" class="cert-card pinned" @click="openDetail(c)">
+                        <div class="c-idea">{{ ideaPreview(c) }}</div>
+                        <el-image :src="c.imageUrl" fit="cover" class="card-img" loading="lazy">
+                            <template #error>
+                                <div class="img-fallback">图片缺失</div>
+                            </template>
+                        </el-image>
+                        <div class="card-info">
+                            <div class="c-title">{{ c.title }}</div>
+                            <div class="c-sub">{{ c.awardDate }}</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 其他记录（时间序较旧的一批，取 /view 第二页） -->
+            <section class="section">
+                <h2 class="section-title clickable" @click="$router.push('/list')">
+                    其他记录<span class="view-all">全部记录 →</span>
+                </h2>
+                <div class="card-row three">
+                    <template v-for="i in 3" :key="'o' + i">
+                        <div v-if="home.others[i - 1]" class="cert-card" @click="openDetail(home.others[i - 1])">
+                            <div class="c-idea">{{ ideaPreview(home.others[i - 1]) }}</div>
+                            <el-image :src="home.others[i - 1].imageUrl" fit="cover" class="card-img" loading="lazy">
                                 <template #error>
                                     <div class="img-fallback">图片缺失</div>
                                 </template>
                             </el-image>
                             <div class="card-info">
-                                <div class="c-title">{{ c.title }}</div>
-                                <el-tag type="danger" size="small">{{ c.awardLevel }}</el-tag>
-                                <div class="c-sub">{{ c.recipient }}</div>
+                                <div class="c-title">{{ home.others[i - 1].title }}</div>
+                                <div class="c-sub">{{ home.others[i - 1].awardDate }}</div>
                             </div>
                         </div>
-                    </div>
-                </section>
-
-                <!-- 等级前三 -->
-                <section class="section">
-                    <h2 class="section-title clickable" @click="$router.push('/list?sortBy=level')">
-                        等级前三<span class="view-all">查看全部 →</span>
-                    </h2>
-                    <div class="card-row three">
-                        <template v-for="i in 3" :key="'l' + i">
-                            <div v-if="home.byLevel[i - 1]" class="cert-card" @click="openDetail(home.byLevel[i - 1])">
-                                <el-image :src="home.byLevel[i - 1].imageUrl" fit="cover" class="card-img"
-                                    loading="lazy">
-                                    <template #error>
-                                        <div class="img-fallback">图片缺失</div>
-                                    </template>
-                                </el-image>
-                                <div class="card-info">
-                                    <div class="c-title">{{ home.byLevel[i - 1].title }}</div>
-                                    <div class="c-sub">
-                                        <el-tag size="small">{{ home.byLevel[i - 1].awardLevel }}</el-tag>
-                                        {{ home.byLevel[i - 1].recipient }}
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- 信息不足留空白栏位 -->
-                            <div v-else class="cert-card empty">
-                                <span>虚位以待</span>
-                            </div>
-                        </template>
-                    </div>
-                </section>
-
-                <!-- 最新荣誉（按时间前三） -->
-                <section class="section">
-                    <h2 class="section-title clickable" @click="$router.push('/list?sortBy=time')">
-                        最新荣誉<span class="view-all">查看全部 →</span>
-                    </h2>
-                    <div class="card-row three">
-                        <template v-for="i in 3" :key="'t' + i">
-                            <div v-if="home.byTime[i - 1]" class="cert-card" @click="openDetail(home.byTime[i - 1])">
-                                <el-image :src="home.byTime[i - 1].imageUrl" fit="cover" class="card-img"
-                                    loading="lazy">
-                                    <template #error>
-                                        <div class="img-fallback">图片缺失</div>
-                                    </template>
-                                </el-image>
-                                <div class="card-info">
-                                    <div class="c-title">{{ home.byTime[i - 1].title }}</div>
-                                    <div class="c-sub">
-                                        <el-tag size="small">{{ home.byTime[i - 1].awardLevel }}</el-tag>
-                                        {{ home.byTime[i - 1].awardDate }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else class="cert-card empty">
-                                <span>虚位以待</span>
-                            </div>
-                        </template>
-                    </div>
-                </section>
-            </template>
-
-            <!-- ===== 搜索模式：独立结果列表 ===== -->
-            <template v-else>
-                <section class="section">
-                    <h2 class="section-title">
-                        搜索结果
-                        <span class="result-count">共 {{ page.total }} 条</span>
-                    </h2>
-                    <el-empty v-if="!results.length && !loading" description="没有找到相关奖状" />
-                    <div v-else class="result-list">
-                        <div v-for="c in results" :key="'r' + c.id" class="result-row" @click="openDetail(c)">
-                            <el-tag size="small" :type="levelTagType(c.awardLevel)">{{ c.awardLevel }}</el-tag>
-                            <span class="c-title">{{ c.title }}</span>
-                            <span class="c-sub">{{ c.recipient }}</span>
-                            <span class="c-sub">{{ c.eventName }}</span>
-                            <span class="c-sub date">{{ c.awardDate }}</span>
+                        <!-- 记录不足留空白栏位 -->
+                        <div v-else class="cert-card empty">
+                            <span>暂无记录</span>
                         </div>
-                    </div>
-                    <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-                        layout="total, prev, pager, next" class="pager" @current-change="fetchResults" />
-                </section>
-            </template>
+                    </template>
+                </div>
+            </section>
+
+            <!-- 最新记录（按时间倒序第一页） -->
+            <section class="section">
+                <h2 class="section-title clickable" @click="$router.push('/list')">
+                    最新记录<span class="view-all">全部记录 →</span>
+                </h2>
+                <div class="card-row three">
+                    <template v-for="i in 3" :key="'t' + i">
+                        <div v-if="home.latest[i - 1]" class="cert-card" @click="openDetail(home.latest[i - 1])">
+                            <div class="c-idea">{{ ideaPreview(home.latest[i - 1]) }}</div>
+                            <el-image :src="home.latest[i - 1].imageUrl" fit="cover" class="card-img" loading="lazy">
+                                <template #error>
+                                    <div class="img-fallback">图片缺失</div>
+                                </template>
+                            </el-image>
+                            <div class="card-info">
+                                <div class="c-title">{{ home.latest[i - 1].title }}</div>
+                                <div class="c-sub">{{ home.latest[i - 1].awardDate }}</div>
+                            </div>
+                        </div>
+                        <div v-else class="cert-card empty">
+                            <span>暂无记录</span>
+                        </div>
+                    </template>
+                </div>
+            </section>
         </main>
 
         <!-- 备案号：工信部要求公示在网站底部 -->
@@ -138,7 +101,7 @@
         </footer>
 
         <!-- 详情弹窗：屏幕正中心，图片在左，具体信息在右 -->
-        <el-dialog v-model="detailVisible" :title="detail?.title" width="920px" align-center class="detail-dialog">
+        <el-dialog v-model="detailVisible" title="记录详情" width="920px" align-center class="detail-dialog">
             <div class="detail-body" v-if="detail">
                 <el-image :src="detail.imageUrl" fit="contain" class="detail-img" loading="lazy"
                     :preview-src-list="[detail.imageUrl]" hide-on-click-modal>
@@ -147,14 +110,9 @@
                     </template>
                 </el-image>
                 <div class="detail-info">
-                    <div class="detail-row"><span class="label">获奖成员</span><span>{{ detail.recipient }}</span></div>
-                    <div class="detail-row"><span class="label">赛事名称</span><span>{{ detail.eventName }}</span></div>
-                    <div class="detail-row"><span class="label">所属项目</span><span>{{ detail.projectName }}</span></div>
-                    <div class="detail-row">
-                        <span class="label">奖状等级</span>
-                        <el-tag :type="levelTagType(detail.awardLevel)" size="large">{{ detail.awardLevel }}</el-tag>
-                    </div>
-                    <div class="detail-row"><span class="label">获奖日期</span><span>{{ detail.awardDate }}</span></div>
+                    <div class="detail-row"><span class="label">记录名称</span><span>{{ detail.title }}</span></div>
+                    <div class="detail-row"><span class="label">记录日期</span><span>{{ detail.awardDate }}</span></div>
+                    <div class="detail-row"><span class="label">想法</span><span>{{ detail.organization?.trim() || '—' }}</span></div>
                 </div>
             </div>
         </el-dialog>
@@ -163,7 +121,6 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 interface Certificate {
@@ -174,21 +131,10 @@ interface Certificate {
     awardLevel: string
     projectName: string
     awardDate: string
+    organization?: string
     isPinned: boolean
     status: number
     imageUrl: string
-}
-
-const LEVELS = ['国家级', '省级', '市级', '校级', '其他']
-
-const levelTagType = (level?: string) => {
-    switch (level) {
-        case '国家级': return 'danger'
-        case '省级': return 'warning'
-        case '市级': return 'success'
-        case '校级': return 'primary'
-        default: return 'info'
-    }
 }
 
 // ---------- 主题切换（白/黑/护眼，记忆在 localStorage） ----------
@@ -203,9 +149,17 @@ watch(theme, (t) => {
 
 // ---------- 展示数据 ----------
 const loading = ref(false)
-const home = reactive<{ pinned: Certificate[]; byLevel: Certificate[]; byTime: Certificate[] }>({
-    pinned: [], byLevel: [], byTime: []
+const home = reactive<{ pinned: Certificate[]; latest: Certificate[]; others: Certificate[] }>({
+    pinned: [], latest: [], others: []
 })
+
+// 卡片想法预览：organization 截断若干字加省略号；为空回退为记录名称
+const IDEA_PREVIEW_LEN = 30
+const ideaPreview = (c: Certificate) => {
+    const org = (c.organization ?? '').trim()
+    if (!org) return c.title
+    return org.length > IDEA_PREVIEW_LEN ? org.slice(0, IDEA_PREVIEW_LEN) + '…' : org
+}
 
 const fetchHome = async () => {
     loading.value = true
@@ -213,49 +167,22 @@ const fetchHome = async () => {
         const res = await axios.post('/api/certificate/home')
         if (res.data.code === 200) {
             home.pinned = res.data.data.pinned || []
-            home.byLevel = res.data.data.byLevel || []
-            home.byTime = res.data.data.byTime || []
+        }
+        // 最新记录：/view 按时间倒序第一页；其他记录：同接口第二页
+        const baseParams = { status: '0', sortBy: 'time', size: 3 }
+        const [latestRes, othersRes] = await Promise.all([
+            axios.post('/api/certificate/view', { ...baseParams, current: 1 }),
+            axios.post('/api/certificate/view', { ...baseParams, current: 2 })
+        ])
+        if (latestRes.data.code === 200) {
+            home.latest = latestRes.data.data.records || []
+        }
+        if (othersRes.data.code === 200) {
+            home.others = othersRes.data.data.records || []
         }
     } finally {
         loading.value = false
     }
-}
-
-// ---------- 搜索 ----------
-const searchMode = ref(false)
-const keyword = ref('')
-const level = ref('')
-const results = ref<Certificate[]>([])
-const page = reactive({ current: 1, size: 10, total: 0 })
-
-const fetchResults = async () => {
-    loading.value = true
-    try {
-        const res = await axios.post('/api/certificate/search', {
-            current: page.current,
-            size: page.size,
-            keyword: keyword.value || undefined,
-            level: level.value || undefined
-        })
-        if (res.data.code === 200) {
-            results.value = res.data.data.records
-            page.total = res.data.data.total
-        }
-    } finally {
-        loading.value = false
-    }
-}
-
-const handleSearch = () => {
-    searchMode.value = true
-    page.current = 1
-    fetchResults()
-}
-
-const backToShowcase = () => {
-    searchMode.value = false
-    keyword.value = ''
-    level.value = ''
 }
 
 // ---------- 详情弹窗 ----------
@@ -324,21 +251,26 @@ onMounted(() => {
     z-index: 10;
 }
 
-/* 搜索区居中偏右 */
-.search-area {
+/* 品牌区 */
+.brand {
     flex: 1;
+    min-width: 0;
     display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
 }
 
-.keyword-input {
-    width: 320px;
+.brand-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
 }
 
-.level-select {
-    width: 130px;
+.brand-sub {
+    font-size: 12px;
+    color: var(--hp-sub);
 }
 
 .login-area {
@@ -386,29 +318,22 @@ onMounted(() => {
     color: #409eff;
 }
 
-.result-count {
-    font-size: 13px;
-    color: var(--hp-sub);
-    font-weight: normal;
-    margin-left: 8px;
-}
-
-/* 块内卡片横向并排 */
+/* 块内卡片横向并排（卡片纵排：想法在上、图片居中、名称日期在下） */
 .card-row {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     gap: 14px;
 }
 
-/* 前三名区块固定三列横排 */
+/* 两个三卡区块固定三列横排 */
 .card-row.three {
     grid-template-columns: repeat(3, 1fr);
 }
 
 .cert-card {
     display: flex;
-    gap: 12px;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
     background: var(--hp-card);
     border-radius: 8px;
     padding: 12px;
@@ -423,7 +348,8 @@ onMounted(() => {
 
 .cert-card.empty {
     justify-content: center;
-    min-height: 104px;
+    align-items: center;
+    min-height: 200px;
     border: 1px dashed var(--hp-border);
     color: var(--hp-sub);
     cursor: default;
@@ -435,23 +361,29 @@ onMounted(() => {
     transform: none;
 }
 
+/* 想法预览：图片上方一行，超出省略 */
+.c-idea {
+    font-size: 13px;
+    color: var(--hp-sub);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .card-img {
-    width: 150px;
-    height: 104px;
+    width: 100%;
+    height: 170px;
     border-radius: 6px;
-    flex-shrink: 0;
 }
 
 .card-info {
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .c-title {
     font-weight: 600;
-    margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -474,40 +406,6 @@ onMounted(() => {
     background: var(--hp-border);
     color: var(--hp-sub);
     font-size: 13px;
-}
-
-/* 搜索结果 */
-.result-list {
-    background: var(--hp-card);
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.result-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--hp-border);
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.result-row:hover {
-    background: var(--hp-bg);
-}
-
-.result-row .c-title {
-    flex: 1;
-}
-
-.result-row .date {
-    margin-left: auto;
-}
-
-.pager {
-    margin-top: 16px;
-    justify-content: flex-end;
 }
 
 /* 备案号页脚：低调小字，随主题变色 */
@@ -562,7 +460,7 @@ onMounted(() => {
 
 /* ===== 移动端适配（≤768px）===== */
 @media (max-width: 768px) {
-    /* 顶栏改两行：第一行主题切换+登录，第二行搜索区全宽 */
+    /* 顶栏改两行：第一行品牌+登录，第二行主题切换 */
     .top-bar {
         flex-wrap: wrap;
         height: auto;
@@ -570,31 +468,12 @@ onMounted(() => {
         row-gap: 8px;
     }
 
+    .brand-title {
+        font-size: 16px;
+    }
+
     .login-area {
         margin-left: auto;
-    }
-
-    /* 搜索区一行排布：输入框弹性占满剩余宽度，等级下拉收窄，按钮只留图标 */
-    .search-area {
-        flex: 1 1 100%;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-    }
-
-    .keyword-input {
-        flex: 1;
-        width: auto;
-        min-width: 0;
-    }
-
-    .level-select {
-        width: 88px;
-        flex-shrink: 0;
-    }
-
-    /* 搜索按钮只留放大镜图标 */
-    .search-area :deep(.el-button--primary span) {
-        display: none;
     }
 
     .content {
@@ -605,31 +484,13 @@ onMounted(() => {
         font-size: 16px;
     }
 
-    /* 前三名固定三列 → 单列纵排；横排卡片图缩小 */
+    /* 三卡区块固定三列 → 单列纵排 */
     .card-row.three {
         grid-template-columns: 1fr;
     }
 
     .card-img {
-        width: 110px;
-        height: 80px;
-    }
-
-    /* 搜索结果行：手机只留 等级+标题+日期，其余隐藏 */
-    .result-row {
-        flex-wrap: wrap;
-        gap: 8px 12px;
-        padding: 12px 14px;
-    }
-
-    .result-row .c-sub {
-        display: none;
-    }
-
-    .result-row .date {
-        display: block;
-        margin-left: auto;
-        font-size: 12px;
+        height: 140px;
     }
 
     /* 详情弹窗：图上文下 */
@@ -651,10 +512,6 @@ onMounted(() => {
     .detail-row .label {
         width: 72px;
         margin-right: 8px;
-    }
-
-    .pager {
-        justify-content: center;
     }
 }
 </style>

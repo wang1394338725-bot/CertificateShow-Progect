@@ -1,20 +1,20 @@
 <template>
     <el-container class="admin-container">
         <el-aside width="200px" class="admin-aside">
-            <div class="logo">奖状管理</div>
+            <div class="logo">个人生活记录</div>
             <el-menu :default-active="activeMenu" router class="menu" background-color="#304156" text-color="#bfcbd9"
                 active-text-color="#409EFF">
                 <el-menu-item index="/admin/upload">
                     <el-icon>
                         <Upload />
                     </el-icon>
-                    <span>上传奖状</span>
+                    <span>上传记录</span>
                 </el-menu-item>
                 <el-menu-item index="/admin/browse">
                     <el-icon>
                         <Document />
                     </el-icon>
-                    <span>奖状浏览</span>
+                    <span>记录浏览</span>
                 </el-menu-item>
                 <el-menu-item index="/admin/messages"> <!-- 改为复数，匹配路由 -->
                     <el-icon class="msg-icon">
@@ -265,9 +265,9 @@ const isSuperAdmin = computed(() => userInfo?.role === "SUPER_ADMIN");
     }
 
     .admin-aside .logo {
-        /* 4 个字缩小后刚好放进 60px 窄条 */
-        font-size: 13px;
-        padding: 0 4px;
+        /* 6 个字缩小后刚好放进 60px 窄条 */
+        font-size: 10px;
+        padding: 0;
         line-height: 60px;
     }
 

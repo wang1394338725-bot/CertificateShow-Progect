@@ -12,7 +12,7 @@
         </template>
 
         <el-table :data="tableData" style="width: 100%" v-loading="loading" @row-click="showDetail">
-            <el-table-column prop="certificateTitle" label="奖状名称" show-overflow-tooltip />
+            <el-table-column prop="certificateTitle" label="记录名称" show-overflow-tooltip />
             <el-table-column prop="requesterName" label="提交人" width="90" />
             <el-table-column prop="reason" label="删除理由" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="90">
@@ -61,7 +61,7 @@
         <!-- ====== 消息详情弹窗（点击行查看全部字段，手机端隐藏列的信息在这里补齐）====== -->
         <el-dialog v-model="detailVisible" title="消息详情" width="min(560px, 94vw)">
             <el-descriptions :column="1" border v-if="detailRow">
-                <el-descriptions-item label="奖状名称">{{ detailRow.certificateTitle }}</el-descriptions-item>
+                <el-descriptions-item label="记录名称">{{ detailRow.certificateTitle }}</el-descriptions-item>
                 <el-descriptions-item label="提交人">{{ detailRow.requesterName }}</el-descriptions-item>
                 <el-descriptions-item label="删除理由">{{ detailRow.reason || '—' }}</el-descriptions-item>
                 <el-descriptions-item label="状态">
@@ -144,7 +144,7 @@ const approveDelete = async (row: any) => {
             authHeaders()
         )
         if (res.data.code === 200) {
-            ElMessage.success('审核通过，奖状已删除')
+            ElMessage.success('审核通过，记录已删除')
         }
         fetchData()
     } catch {
