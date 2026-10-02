@@ -18,8 +18,33 @@
 
         <!-- 列表 -->
         <el-card class="list-card">
-            <el-table :data="tableData" style="width: 100%" v-loading="loading">
-                <el-table-column prop="id" label="ID" width="80" class-name="hide-sm" />
+            <!-- 手机端：卡片列表，全字段直出 -->
+            <div v-if="isMobile" class="m-list" v-loading="loading">
+                <el-empty v-if="!tableData.length && !loading" description="暂无管理员" :image-size="60" />
+                <div v-for="row in tableData" :key="row.id" class="m-card">
+                    <div class="m-head">
+                        <span class="m-title">{{ row.username }}<span class="m-real">（{{ row.realName }}）</span></span>
+                        <el-tag v-if="row.role === 'SUPER_ADMIN'" type="danger" size="small">超级管理员</el-tag>
+                        <el-tag v-else-if="row.role === 'ADMIN'" type="primary" size="small">普通管理员</el-tag>
+                        <el-tag v-else type="info" size="small">未知</el-tag>
+                    </div>
+                    <div class="m-row"><span class="m-label">ID</span>{{ row.id }}</div>
+                    <div class="m-row"><span class="m-label">创建时间</span>{{ formatTime(row.createTime) }}</div>
+                    <div class="m-ops">
+                        <!-- 超级管理员账号不可被管理 -->
+                        <span v-if="row.role === 'SUPER_ADMIN'" class="sys-account">系统账号</span>
+                        <template v-else>
+                            <el-button size="small" type="primary" :icon="Edit" @click="openEditDialog(row)">编辑</el-button>
+                            <el-button size="small" type="warning" :icon="Key" @click="openResetDialog(row)">重置密码</el-button>
+                            <el-button size="small" type="danger" plain :icon="Delete" @click="deleteAdmin(row)">删除</el-button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 桌面端：表格 -->
+            <el-table v-else :data="tableData" style="width: 100%" v-loading="loading">
+                <el-table-column prop="id" label="ID" width="80" />
                 <el-table-column prop="username" label="用户名" />
                 <el-table-column prop="realName" label="真实姓名" />
                 <el-table-column prop="role" label="角色" width="120">
@@ -29,28 +54,19 @@
                         <el-tag v-else type="info">未知</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="创建时间" width="180" class-name="hide-sm">
+                <el-table-column label="创建时间" width="180">
                     <template #default="{ row }">
                         {{ formatTime(row.createTime) }}
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" :width="isMobile ? 140 : 260" fixed="right">
+                <el-table-column label="操作" width="260" fixed="right">
                     <template #default="{ row }">
                         <!-- 超级管理员账号不可被管理 -->
                         <span v-if="row.role === 'SUPER_ADMIN'" class="sys-account">系统账号</span>
                         <div v-else class="op-cell">
-                            <el-button size="small" type="primary" :icon="isMobile ? Edit : undefined"
-                                @click="openEditDialog(row)">
-                                {{ isMobile ? '' : '编辑' }}
-                            </el-button>
-                            <el-button size="small" type="warning" :icon="isMobile ? Key : undefined"
-                                @click="openResetDialog(row)">
-                                {{ isMobile ? '' : '重置密码' }}
-                            </el-button>
-                            <el-button size="small" type="danger" plain :icon="isMobile ? Delete : undefined"
-                                @click="deleteAdmin(row)">
-                                {{ isMobile ? '' : '删除' }}
-                            </el-button>
+                            <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
+                            <el-button size="small" type="warning" @click="openResetDialog(row)">重置密码</el-button>
+                            <el-button size="small" type="danger" plain @click="deleteAdmin(row)">删除</el-button>
                         </div>
                     </template>
                 </el-table-column>
@@ -356,11 +372,67 @@ onMounted(() => {
         width: 100% !important;
         margin-right: 0 !important;
     }
+}
 
-    /* 手机隐藏次要列：只留 用户名/真实姓名/角色/操作 */
-    .list-card :deep(th.hide-sm),
-    .list-card :deep(td.hide-sm) {
-        display: none;
-    }
+/* 手机端卡片列表 */
+.m-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.m-card {
+    border: 1px solid #e4e7ed;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+}
+
+.m-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.m-title {
+    font-weight: 600;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m-real {
+    font-weight: normal;
+    color: #909399;
+    font-size: 13px;
+}
+
+.m-row {
+    display: flex;
+    gap: 8px;
+    line-height: 1.7;
+    color: #606266;
+}
+
+.m-label {
+    flex-shrink: 0;
+    width: 64px;
+    color: #909399;
+}
+
+.m-ops {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.m-ops .el-button+.el-button {
+    margin-left: 0;
 }
 </style>

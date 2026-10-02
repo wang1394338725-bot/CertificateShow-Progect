@@ -28,11 +28,14 @@
                 <div v-else class="card-row">
                     <div v-for="c in home.pinned" :key="'p' + c.id" class="cert-card pinned" @click="openDetail(c)">
                         <div class="c-idea">{{ ideaPreview(c) }}</div>
-                        <el-image :src="c.imageUrl" fit="cover" class="card-img" loading="lazy">
-                            <template #error>
-                                <div class="img-fallback">图片缺失</div>
-                            </template>
-                        </el-image>
+                        <div class="img-wrap">
+                            <el-image :src="c.imageUrl" fit="cover" class="card-img" loading="lazy">
+                                <template #error>
+                                    <div class="img-fallback">图片缺失</div>
+                                </template>
+                            </el-image>
+                            <span class="pin-badge">置顶</span>
+                        </div>
                         <div class="card-info">
                             <div class="c-title">{{ c.title }}</div>
                             <div class="c-sub">{{ c.awardDate }}</div>
@@ -50,11 +53,13 @@
                     <template v-for="i in 3" :key="'o' + i">
                         <div v-if="home.others[i - 1]" class="cert-card" @click="openDetail(home.others[i - 1])">
                             <div class="c-idea">{{ ideaPreview(home.others[i - 1]) }}</div>
-                            <el-image :src="home.others[i - 1].imageUrl" fit="cover" class="card-img" loading="lazy">
-                                <template #error>
-                                    <div class="img-fallback">图片缺失</div>
-                                </template>
-                            </el-image>
+                            <div class="img-wrap">
+                                <el-image :src="home.others[i - 1].imageUrl" fit="cover" class="card-img" loading="lazy">
+                                    <template #error>
+                                        <div class="img-fallback">图片缺失</div>
+                                    </template>
+                                </el-image>
+                            </div>
                             <div class="card-info">
                                 <div class="c-title">{{ home.others[i - 1].title }}</div>
                                 <div class="c-sub">{{ home.others[i - 1].awardDate }}</div>
@@ -77,11 +82,13 @@
                     <template v-for="i in 3" :key="'t' + i">
                         <div v-if="home.latest[i - 1]" class="cert-card" @click="openDetail(home.latest[i - 1])">
                             <div class="c-idea">{{ ideaPreview(home.latest[i - 1]) }}</div>
-                            <el-image :src="home.latest[i - 1].imageUrl" fit="cover" class="card-img" loading="lazy">
-                                <template #error>
-                                    <div class="img-fallback">图片缺失</div>
-                                </template>
-                            </el-image>
+                            <div class="img-wrap">
+                                <el-image :src="home.latest[i - 1].imageUrl" fit="cover" class="card-img" loading="lazy">
+                                    <template #error>
+                                        <div class="img-fallback">图片缺失</div>
+                                    </template>
+                                </el-image>
+                            </div>
                             <div class="card-info">
                                 <div class="c-title">{{ home.latest[i - 1].title }}</div>
                                 <div class="c-sub">{{ home.latest[i - 1].awardDate }}</div>
@@ -95,8 +102,9 @@
             </section>
         </main>
 
-        <!-- 备案号：工信部要求公示在网站底部 -->
+        <!-- 备案页脚：工信部要求公示在网站底部，采用常见双行样式（版权 + 备案号） -->
         <footer class="icp-footer">
+            <div class="footer-copy">© 2026 个人生活记录 · 保留所有权利</div>
             <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">皖ICP备2026031376号-1</a>
         </footer>
 
@@ -266,6 +274,11 @@ onMounted(() => {
     font-weight: 700;
     margin: 0;
     line-height: 1.2;
+    letter-spacing: 1px;
+    background: linear-gradient(120deg, #409eff, #79bbff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .brand-sub {
@@ -335,15 +348,18 @@ onMounted(() => {
     flex-direction: column;
     gap: 8px;
     background: var(--hp-card);
-    border-radius: 8px;
-    padding: 12px;
+    border: 1px solid var(--hp-border);
+    border-radius: 10px;
+    padding: 14px;
     cursor: pointer;
-    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
 }
 
 .cert-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-3px);
+    border-color: transparent;
 }
 
 .cert-card.empty {
@@ -370,10 +386,39 @@ onMounted(() => {
     white-space: nowrap;
 }
 
+/* 图片容器：圆角裁剪 + 悬停缩放；置顶角标叠在图上 */
+.img-wrap {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
 .card-img {
     width: 100%;
     height: 170px;
-    border-radius: 6px;
+    display: block;
+}
+
+.img-wrap :deep(img) {
+    transition: transform 0.35s ease;
+}
+
+.cert-card:hover .img-wrap :deep(img) {
+    transform: scale(1.06);
+}
+
+.pin-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    background: rgba(230, 162, 60, 0.95);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
 }
 
 .card-info {
@@ -408,11 +453,15 @@ onMounted(() => {
     font-size: 13px;
 }
 
-/* 备案号页脚：低调小字，随主题变色 */
+/* 备案页脚：常见样式——顶部分隔线、居中灰字、版权与备案号双行 */
 .icp-footer {
+    border-top: 1px solid var(--hp-border);
+    background: var(--hp-bar);
     text-align: center;
-    padding: 4px 0 20px;
+    padding: 18px 12px 22px;
     font-size: 12px;
+    line-height: 1.9;
+    color: var(--hp-sub);
 }
 
 .icp-footer a {

@@ -11,7 +11,34 @@
             </div>
         </template>
 
-        <el-table :data="tableData" style="width: 100%" v-loading="loading" @row-click="showDetail">
+        <!-- 手机端：卡片列表，全部字段直接展示 -->
+        <div v-if="isMobile" class="m-list" v-loading="loading">
+            <el-empty v-if="!tableData.length && !loading" description="暂无消息" :image-size="60" />
+            <div v-for="row in tableData" :key="row.id" class="m-card">
+                <div class="m-head">
+                    <span class="m-title">{{ row.certificateTitle }}</span>
+                    <el-tag v-if="row.status === 0" type="warning" size="small">待审核</el-tag>
+                    <el-tag v-else-if="row.status === 1" type="success" size="small">已通过</el-tag>
+                    <el-tag v-else-if="row.status === 3" type="info" size="small">直接删除</el-tag>
+                    <el-tag v-else type="danger" size="small">已驳回</el-tag>
+                </div>
+                <div class="m-row"><span class="m-label">提交人</span>{{ row.requesterName }}</div>
+                <div class="m-row"><span class="m-label">删除理由</span>{{ row.reason || '—' }}</div>
+                <div class="m-row"><span class="m-label">审核人</span>{{ row.approverName || '—' }}</div>
+                <div class="m-row" v-if="row.rejectReason"><span class="m-label">驳回原因</span>{{ row.rejectReason }}</div>
+                <div class="m-row"><span class="m-label">申请时间</span>{{ row.createTime }}</div>
+                <div class="m-ops" v-if="isSuperAdmin">
+                    <template v-if="row.status === 0">
+                        <el-button size="small" type="success" :icon="CircleCheck" @click="approveDelete(row)">通过</el-button>
+                        <el-button size="small" type="danger" :icon="Close" @click="rejectDelete(row)">驳回</el-button>
+                    </template>
+                    <el-button v-else size="small" type="info" plain :icon="Delete" @click="removeAudit(row)">删除</el-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 桌面端：表格 -->
+        <el-table v-else :data="tableData" style="width: 100%" v-loading="loading" @row-click="showDetail">
             <el-table-column prop="certificateTitle" label="记录名称" show-overflow-tooltip />
             <el-table-column prop="requesterName" label="提交人" width="90" />
             <el-table-column prop="reason" label="删除理由" show-overflow-tooltip />
@@ -23,33 +50,25 @@
                     <el-tag v-else type="danger">已驳回</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column prop="approverName" label="审核人" width="110" class-name="hide-sm">
+            <el-table-column prop="approverName" label="审核人" width="110">
                 <template #default="{ row }">{{ row.approverName || '—' }}</template>
             </el-table-column>
-            <el-table-column prop="rejectReason" label="驳回原因" show-overflow-tooltip class-name="hide-sm">
+            <el-table-column prop="rejectReason" label="驳回原因" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.rejectReason || '—' }}</template>
             </el-table-column>
-            <el-table-column prop="createTime" label="申请时间" width="170" class-name="hide-sm" />
+            <el-table-column prop="createTime" label="申请时间" width="170" />
 
-            <!-- 操作列：仅超管可审核待审核记录；手机端图标化 -->
-            <el-table-column v-if="isSuperAdmin" label="操作" :width="isMobile ? 130 : 200" fixed="right">
+            <!-- 操作列：仅超管可审核待审核记录 -->
+            <el-table-column v-if="isSuperAdmin" label="操作" width="200" fixed="right">
                 <template #default="{ row }">
                     <div class="op-cell">
                         <template v-if="row.status === 0">
-                            <el-button size="small" type="success" :icon="isMobile ? CircleCheck : undefined"
-                                @click.stop="approveDelete(row)">
-                                {{ isMobile ? '' : '审核通过' }}
-                            </el-button>
-                            <el-button size="small" type="danger" :icon="isMobile ? Close : undefined"
-                                @click.stop="rejectDelete(row)">
-                                {{ isMobile ? '' : '驳回' }}
-                            </el-button>
+                            <el-button size="small" type="success" @click.stop="approveDelete(row)">审核通过</el-button>
+                            <el-button size="small" type="danger" @click.stop="rejectDelete(row)">驳回</el-button>
                         </template>
                         <!-- 已处理（含超管直删）的消息可删除，保持消息栏整洁 -->
                         <el-button v-else size="small" type="info" plain :icon="Delete"
-                            @click.stop="removeAudit(row)">
-                            {{ isMobile ? '' : '删除' }}
-                        </el-button>
+                            @click.stop="removeAudit(row)">删除</el-button>
                     </div>
                 </template>
             </el-table-column>
@@ -261,11 +280,57 @@ onMounted(() => {
     margin-left: 0;
 }
 
-/* ===== 移动端适配（≤768px）：隐藏次要列（审核人/驳回原因/时间，详情弹窗可看），只留 名称/提交人/删除理由/状态/操作 ===== */
-@media (max-width: 768px) {
-    .messages-card :deep(th.hide-sm),
-    .messages-card :deep(td.hide-sm) {
-        display: none;
-    }
+/* 手机端卡片列表：全部字段直出，不再靠隐藏列+详情弹窗 */
+.m-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.m-card {
+    border: 1px solid #e4e7ed;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+}
+
+.m-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.m-title {
+    font-weight: 600;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m-row {
+    display: flex;
+    gap: 8px;
+    line-height: 1.7;
+    color: #606266;
+}
+
+.m-label {
+    flex-shrink: 0;
+    width: 64px;
+    color: #909399;
+}
+
+.m-ops {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.m-ops .el-button+.el-button {
+    margin-left: 0;
 }
 </style>

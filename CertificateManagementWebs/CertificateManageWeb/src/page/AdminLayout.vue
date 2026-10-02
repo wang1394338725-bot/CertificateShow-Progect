@@ -257,23 +257,36 @@ const isSuperAdmin = computed(() => userInfo?.role === "SUPER_ADMIN");
     overflow-y: auto;
 }
 
-/* 响应式：小屏幕下侧边栏可折叠，或隐藏 */
+/* 响应式：小屏幕下侧边栏折叠为窄条 */
 @media screen and (max-width: 768px) {
     .admin-aside {
-        width: 60px !important;
+        width: 56px !important;
         /* 折叠为窄条 */
     }
 
     .admin-aside .logo {
-        /* 6 个字缩小后刚好放进 60px 窄条 */
-        font-size: 10px;
-        padding: 0;
-        line-height: 60px;
+        /* 长名放不进窄条：隐藏原文，用短名替代 */
+        font-size: 0;
     }
 
-    .admin-aside .el-menu-item span {
+    .admin-aside .logo::after {
+        content: '记录';
+        font-size: 13px;
+    }
+
+    /* 菜单图标居中：清掉默认左右内边距与图标右间距 */
+    .admin-aside .el-menu-item {
+        padding: 0 !important;
+        justify-content: center;
+    }
+
+    .admin-aside .el-menu-item .el-icon {
+        margin-right: 0;
+    }
+
+    /* 只隐藏菜单文字（> 限定直接子节点，保住消息角标不被误隐藏） */
+    .admin-aside .el-menu-item>span {
         display: none;
-        /* 隐藏文字，只显示图标 */
     }
 
     /* 顶栏：返回主页只留图标，标题缩小 */
@@ -291,6 +304,14 @@ const isSuperAdmin = computed(() => userInfo?.role === "SUPER_ADMIN");
 
     .header-right {
         gap: 8px;
+    }
+
+    /* 管理员名超长省略，避免顶栏被挤出换行 */
+    .name-text {
+        max-width: 72px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .admin-main {

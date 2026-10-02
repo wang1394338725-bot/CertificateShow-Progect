@@ -27,7 +27,35 @@
 
         <!-- 列表 -->
         <el-card class="list-card">
-            <el-table :data="tableData" style="width: 100%" v-loading="loading">
+            <!-- 手机端：卡片列表，信息全展示、不横向滑动 -->
+            <div v-if="isMobile" class="m-list" v-loading="loading">
+                <el-empty v-if="!tableData.length && !loading" description="暂无记录" :image-size="60" />
+                <div v-for="row in tableData" :key="row.id" class="m-card">
+                    <div class="m-main" @click="viewDetail(row)">
+                        <el-image v-if="row.imageUrl" :src="row.imageUrl" fit="cover" class="m-thumb"
+                            :preview-src-list="[row.imageUrl]" preview-teleported hide-on-click-modal @click.stop />
+                        <div class="m-info">
+                            <div class="m-title">{{ row.title }}</div>
+                            <div class="m-sub">{{ row.awardDate }}</div>
+                            <div>
+                                <el-tag v-if="row.status === 0" type="success" size="small">正常</el-tag>
+                                <el-tag v-else-if="row.status === 1" type="warning" size="small">待审核删除</el-tag>
+                                <el-tag v-else-if="row.status === 2" type="info" size="small">已隐藏</el-tag>
+                                <el-tag v-else type="info" size="small">未知</el-tag>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="m-ops">
+                        <el-button size="small" :icon="View" @click="viewDetail(row)" />
+                        <el-button size="small" type="primary" :icon="Edit" @click="editRow(row)" />
+                        <el-button size="small" type="danger" :icon="Delete" @click="deleteRow(row)" />
+                        <el-button size="small" type="warning" :icon="Top" @click="topRow(row)" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 桌面端：表格 -->
+            <el-table v-else :data="tableData" style="width: 100%" v-loading="loading">
                 <el-table-column label="图片" width="110">
                     <template #default="{ row }">
                         <el-image v-if="row.imageUrl" :src="row.imageUrl" fit="cover" class="row-thumb"
@@ -45,22 +73,14 @@
                         <el-tag v-else type="info">未知</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" :width="isMobile ? 160 : 360" fixed="right">
+                <el-table-column label="操作" width="360" fixed="right">
                     <template #default="{ row }">
                         <div class="op-cell">
-                            <el-button size="small" :icon="isMobile ? View : undefined" @click="viewDetail(row)">
-                                {{ isMobile ? '' : '查看' }}
-                            </el-button>
-                            <el-button size="small" type="primary" :icon="isMobile ? Edit : undefined"
-                                @click="editRow(row)">
-                                {{ isMobile ? '' : '修改' }}
-                            </el-button>
-                            <el-button size="small" type="danger" :icon="isMobile ? Delete : undefined"
-                                @click="deleteRow(row)">
-                                {{ isMobile ? '' : '删除' }}
-                            </el-button>
-                            <el-button size="small" type="warning" :icon="isMobile ? Top : undefined" @click="topRow(row)">
-                                {{ isMobile ? (row.isPinned ? '取消' : '置顶') : (row.isPinned ? '取消置顶' : '置顶') }}
+                            <el-button size="small" @click="viewDetail(row)">查看</el-button>
+                            <el-button size="small" type="primary" @click="editRow(row)">修改</el-button>
+                            <el-button size="small" type="danger" @click="deleteRow(row)">删除</el-button>
+                            <el-button size="small" type="warning" @click="topRow(row)">
+                                {{ row.isPinned ? '取消置顶' : '置顶' }}
                             </el-button>
                         </div>
                     </template>
@@ -431,6 +451,64 @@ onMounted(() => {
 }
 
 .op-cell .el-button+.el-button {
+    margin-left: 0;
+}
+
+/* 手机端卡片列表 */
+.m-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.m-card {
+    border: 1px solid #e4e7ed;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.m-main {
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.m-thumb {
+    width: 96px;
+    height: 72px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.m-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.m-title {
+    font-weight: 600;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.m-sub {
+    font-size: 13px;
+    color: #909399;
+}
+
+.m-ops {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.m-ops .el-button+.el-button {
     margin-left: 0;
 }
 

@@ -111,14 +111,13 @@ const handleLoginSubmit = async () => {
 </script>
 
 <style scoped>
-/* 浅蓝色背景 */
+/* 浅蓝渐变背景 */
 .login-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #e6f2ff;
-    /* 浅蓝色 */
+    background: linear-gradient(135deg, #d6e9ff 0%, #e6f2ff 50%, #f0f7ff 100%);
     margin: 0;
 }
 
@@ -127,7 +126,7 @@ const handleLoginSubmit = async () => {
     width: 400px;
     max-width: 92vw;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 30px rgba(64, 158, 255, 0.15);
 }
 
 .card-header {

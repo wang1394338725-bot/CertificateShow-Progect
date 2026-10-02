@@ -144,22 +144,34 @@ onMounted(fetchData)
     gap: 12px;
     align-items: center;
     background: #fff;
-    border-radius: 8px;
-    padding: 12px;
+    border: 1px solid #e4e7ed;
+    border-radius: 10px;
+    padding: 14px;
     cursor: pointer;
-    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
 }
 
 .cert-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-3px);
+    border-color: transparent;
 }
 
 .card-img {
     width: 150px;
     height: 104px;
-    border-radius: 6px;
+    border-radius: 8px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.card-img :deep(img) {
+    transition: transform 0.35s ease;
+}
+
+.cert-card:hover .card-img :deep(img) {
+    transform: scale(1.08);
 }
 
 .card-info {

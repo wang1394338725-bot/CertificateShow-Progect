@@ -5,7 +5,8 @@
             <template #header>
                 <span>上传新记录</span>
             </template>
-            <el-form ref="formRef" :model="form" :rules="rules" label-width="120px" class="upload-form">
+            <el-form ref="formRef" :model="form" :rules="rules" :label-position="isMobile ? 'top' : 'right'"
+                label-width="120px" class="upload-form">
                 <el-form-item label="记录名称" prop="title">
                     <el-input v-model="form.title" placeholder="给这条记录起个名字" />
                 </el-form-item>
@@ -66,6 +67,10 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Picture } from '@element-plus/icons-vue'
 import axios from 'axios'
 import type { ApiResponse } from '../api/api'
+import { useIsMobile } from '../utils/responsive'
+
+// 手机端表单标签置顶、控件全宽，避免左右留空要滑动
+const { isMobile } = useIsMobile()
 
 // 表单数据
 const form = reactive({
@@ -273,9 +278,14 @@ const submitImport = async () => {
 
 /* ===== 移动端适配（≤768px）===== */
 @media (max-width: 768px) {
-    /* 表单 label 从 120px 收窄，给输入控件让出宽度 */
+    /* 标签置顶后控件独占整行：日期选择器拉满宽度 */
+    .upload-form :deep(.el-date-editor) {
+        width: 100%;
+    }
+
+    /* 标签置顶时间距收紧，整页一屏显示更多 */
     .upload-form :deep(.el-form-item__label) {
-        width: 96px !important;
+        padding-bottom: 4px;
     }
 
     .import-actions {
